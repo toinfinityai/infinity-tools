@@ -11,7 +11,7 @@ from typing import Dict, List, Tuple, TypeVar
 from infinity_tools.common.ml.datagen import BaseGenerator
 from infinity_tools.common.vis.videos import parse_video_frames
 
-T = TypeVar("T")
+movenet = None
 
 MOVENET_KEYPOINT_DICT = OrderedDict(
     {
@@ -94,11 +94,12 @@ class VisionFitGenerator(BaseGenerator):
         return sequences_X, sequences_y
 
 
-def load_movenet() -> T:
-    """Loads MoveNet model from TensorFlow Hub."""
-    module = hub.load("https://tfhub.dev/google/movenet/singlepose/lightning/4")
-    model = module.signatures["serving_default"]
-    return model
+def ensure_movenet_is_loaded():
+    """Ensures that MoveNet is loaded into a global variable."""
+    global movenet
+    if movenet is None:
+        module = hub.load("https://tfhub.dev/google/movenet/singlepose/lightning/4")
+        movenet = module.signatures["serving_default"]
 
 
 def preprocess_frame(frame: npt.NDArray, input_size: int = 192) -> tf.Tensor:
@@ -111,7 +112,7 @@ def preprocess_frame(frame: npt.NDArray, input_size: int = 192) -> tf.Tensor:
 
 def apply_movenet_to_video(video_path: str) -> npt.NDArray:
     """Performs keypoint estimation on video with MoveNet."""
-    movenet = load_movenet()
+    ensure_movenet_is_loaded()
     video_frames = parse_video_frames(video_path)
     video_results = []
     for frame in video_frames:
