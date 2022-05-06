@@ -44,6 +44,7 @@ below.
     - `pip install -e PATH_TO_INFINITY_TOOLS`
 
 ## OS X (ARM-based such as M1)
+- Ensure you are using conda with the [conda-forge](https://conda-forge.org/) channel. You can check that this is the case with `conda config --show channels`. We recommend using `miniforge` for your conda installation (instructions [here](https://github.com/conda-forge/miniforge)), which sets `conda-forge` as the default channel.
 - Create a fresh Conda env 
     - Using conda:
         - `conda create --name infinity python=3.9`
