@@ -87,9 +87,7 @@ def build_model(
     return model
 
 
-def convert_probability_to_events(
-    y_pred: npt.NDArray, lower_threshold: float, upper_threshold: float
-) -> List[int]:
+def convert_probability_to_events(y_pred: npt.NDArray, lower_threshold: float, upper_threshold: float) -> List[int]:
     """Extracts rep indices from single RNN output.
 
     Args:
@@ -269,9 +267,7 @@ class BaseModel:
 
         self.model.reset_states()
         y_pred = self.model.predict(test_sequences_X[0][None])[0]
-        rep_indices = convert_probability_to_events(
-            y_pred, lower_threshold, upper_threshold
-        )
+        rep_indices = convert_probability_to_events(y_pred, lower_threshold, upper_threshold)
         pred_count = convert_events_to_count(rep_indices, num_frames=len(y_pred))
         self.display_predictions(data_path, pred_count, output_tag=output_tag)
 

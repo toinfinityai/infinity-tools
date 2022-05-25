@@ -21,9 +21,7 @@ class SenseFitGenerator(BaseGenerator):
         batch_size: int,
         class_weights: Dict[int, float],
     ):
-        super().__init__(
-            sequences_X, sequences_y, window_len, batch_size, class_weights
-        )
+        super().__init__(sequences_X, sequences_y, window_len, batch_size, class_weights)
 
     @staticmethod
     def featurize_data(sequences_X: List[npt.NDArray]) -> List[npt.NDArray]:
@@ -65,9 +63,7 @@ class SenseFitGenerator(BaseGenerator):
 
         csv_paths = []
         for folder in folders:
-            csv_paths.extend(
-                glob.glob(os.path.join(folder, "**/*.csv"), recursive=True)
-            )
+            csv_paths.extend(glob.glob(os.path.join(folder, "**/*.csv"), recursive=True))
 
         sequences_y = []
         sequences_X = []

@@ -1,0 +1,30 @@
+name: Lint
+
+on: [push, pull_request]
+
+jobs:
+  run-linters:
+    name: Format Python code
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out Git repository
+        uses: actions/checkout@v2
+
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: '3.x'
+
+      - name: Install Python dependencies
+        run: pip install black
+
+      - name: Run lint action
+        uses: wearerequired/lint-action@v2
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          git_name: "Lint Bot"
+          git_email: "lint-bot@toinfinity.ai"
+          auto_fix: true
+          black: true
+          black_args: "--line-length 120"

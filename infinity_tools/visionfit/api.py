@@ -41,7 +41,7 @@ EXERCISE_LST = [
     "V_UP",
 ]
 GENDER_LST = ["MALE", "FEMALE"]
-FRAME_RATE_LST = [24, 12, 8, 6]
+FRAME_RATE_LST = [30, 24, 12, 8, 6]
 IMAGE_DIM_LST = [256, 512]
 PARAMS_WITH_DESCR = [
     (
@@ -103,7 +103,7 @@ PARAMS_WITH_DESCR = [
         "0.0",
         "-180.0 to 180.0",
     ),
-    ("frame_rate", "Output video frame rate", "24", "['24', '12', '8', '6']"),
+    ("frame_rate", "Output video frame rate", "24", "['30', '24', '12', '8', '6']"),
     ("image_width", "Output image/video width in pixels", "256", "128 to 512"),
     ("image_height", "Output image/video height in pixels", "256", "128 to 512"),
 ]
@@ -137,78 +137,103 @@ def sample_input(
     if scene is None:
         scene = str(np.random.choice(SCENE_LST))
     else:
-        assert scene in SCENE_LST
+        if scene not in SCENE_LST:
+            raise ValueError(f"`scene` ({scene}) not in supported scene list ({SCENE_LST})")
     if exercise is None:
         exercise = str(np.random.choice(EXERCISE_LST))
     else:
-        assert exercise in EXERCISE_LST
+        if exercise not in EXERCISE_LST:
+            raise ValueError(f"`exercise` ({exercise}) not in supported exercise list ({EXERCISE_LST})")
     if gender is None:
         gender = str(np.random.choice(GENDER_LST))
     else:
-        assert gender in GENDER_LST
+        if gender not in GENDER_LST:
+            raise ValueError(f"`gender` ({gender}) not in supported gender list ({GENDER_LST})")
     if num_reps is None:
         num_reps = int(np.random.randint(1, 10))
     else:
-        assert num_reps >= 1 and num_reps <= 10
+        if not (1 <= num_reps <= 10):
+            raise ValueError(f"`num_reps` ({num_reps}) must be in range [1, 10]")
     if seconds_per_rep is None:
         seconds_per_rep = float(np.random.uniform(1.0, 3.0))
     else:
-        assert seconds_per_rep >= 1.0 and seconds_per_rep <= 3.0
+        if not (1.0 <= seconds_per_rep <= 3.0):
+            raise ValueError(f"`seconds_per_rep` ({seconds_per_rep}) must be in range [1.0, 3.0]")
     if max_rel_speed_change is None:
-        max_rel_speed_change = float(np.random.uniform(0.0, 0.3))
+        max_rel_speed_change = float(np.random.uniform(0.0, 0.8))
     else:
-        assert max_rel_speed_change >= 0.0 and max_rel_speed_change <= 1.0
+        if not (0.0 <= max_rel_speed_change <= 1.0):
+            raise ValueError(f"`max_rel_speed_change` ({max_rel_speed_change}) must be in range [0.0, 1.0]")
     if trim_start_frac is None:
-        trim_start_frac = float(np.random.uniform(0.0, 0.1))
+        trim_start_frac = 0.0
     else:
-        assert trim_start_frac >= 0.0 and trim_start_frac <= 1.0
+        if not (0.0 <= trim_start_frac <= 1.0):
+            raise ValueError(f"`trim_start_frac` ({trim_start_frac}) must be in range [0.0, 1.0]")
     if trim_end_frac is None:
-        trim_end_frac = float(np.random.uniform(0.0, 0.1))
+        trim_end_frac = 0.0
     else:
-        assert trim_start_frac >= 0.0 and trim_start_frac <= 1.0
+        if not (0.0 <= trim_end_frac <= 1.0):
+            raise ValueError(f"`trim_end_frac` ({trim_end_frac}) must be in range [0.0, 1.0]")
+    if trim_start_frac + trim_end_frac >= 0.9:
+        raise ValueError(
+            f"The sum of `trim_start_frac` and `trim_end_frac` ({trim_start_frac + trim_end_frac}) must be < 0.9"
+        )
     if kinematic_noise_factor is None:
         kinematic_noise_factor = float(np.random.uniform(0.0, 1.0))
     else:
-        assert kinematic_noise_factor >= 0.0 and kinematic_noise_factor <= 2.0
+        if not (0.0 <= kinematic_noise_factor <= 2.0):
+            raise ValueError(f"`kinematic_noise_factor` ({kinematic_noise_factor}) must be in range [0.0, 2.0]")
     if camera_height is None:
         camera_height = float(np.random.uniform(0.1, 2.75))
     else:
-        assert camera_height >= 0.1 and camera_height <= 2.75
+        if not (0.1 <= camera_height <= 2.75):
+            raise ValueError(f"`camera_height` ({camera_height}) must be in range [0.1, 2.75]")
     if relative_camera_yaw_deg is None:
         relative_camera_yaw_deg = float(np.random.uniform(-15.0, 15.0))
     else:
-        assert relative_camera_yaw_deg >= -45.0 and relative_camera_yaw_deg <= 45.0
+        if not (-45.0 <= relative_camera_yaw_deg <= 45.0):
+            raise ValueError(f"`relative_camera_yaw_deg` ({relative_camera_yaw_deg}) must be in range [-45.0, 45.0]")
     if relative_camera_pitch_deg is None:
         relative_camera_pitch_deg = float(np.random.uniform(-10.0, 10.0))
     else:
-        assert relative_camera_pitch_deg >= -45.0 and relative_camera_pitch_deg <= 45.0
+        if not (-45.0 <= relative_camera_pitch_deg <= 45.0):
+            raise ValueError(
+                f"`relative_camera_pitch_deg` ({relative_camera_pitch_deg}) must be in range [-45.0, 45.0]"
+            )
     if lighting_power is None:
         lighting_power = float(np.random.uniform(10.0, 1000.0))
     else:
-        assert lighting_power >= 0.0 and lighting_power <= 2_000.0
+        if not (0.0 <= lighting_power <= 2_000.0):
+            raise ValueError(f"`lighting_power` ({lighting_power}) must be in range [0.0, 2000.0]")
     if relative_avatar_angle_deg is None:
         relative_avatar_angle_deg = float(np.random.uniform(-180.0, 180.0))
     else:
-        assert (
-            relative_avatar_angle_deg >= -180.0 and relative_avatar_angle_deg <= 180.0
-        )
+        if not (-180.0 <= relative_avatar_angle_deg <= 180.0):
+            raise ValueError(
+                f"`relative_avatar_angle_deg` ({relative_avatar_angle_deg}) must be in range [-180.0, 180.0]"
+            )
     if frame_rate is None:
         frame_rate = int(np.random.choice(FRAME_RATE_LST))
     else:
-        assert frame_rate in FRAME_RATE_LST
+        if frame_rate not in FRAME_RATE_LST:
+            raise ValueError(f"`frame_rate` ({frame_rate}) not in supported frame rate list ({FRAME_RATE_LST})")
     if image_width is None and image_height is None:
         square_size = int(np.random.choice(IMAGE_DIM_LST))
         image_width = square_size
         image_height = square_size
     elif image_width is None:
-        assert image_height >= 128 and image_height <= 512
+        if not (128 <= image_height <= 512):
+            raise ValueError(f"`image_height` ({image_height}) must be in range [128, 512]")
         image_width = image_height
     elif image_height is None:
-        assert image_width >= 128 and image_width <= 512
+        if not (128 <= image_width <= 512):
+            raise ValueError(f"`image_width` ({image_width}) must be in range [128, 512]")
         image_height = image_width
     else:
-        assert image_height >= 128 and image_height <= 512
-        assert image_width >= 128 and image_width <= 512
+        if not (128 <= image_height <= 512):
+            raise ValueError(f"`image_height` ({image_height}) must be in range [128, 512]")
+        if not (128 <= image_width <= 512):
+            raise ValueError(f"`image_width` ({image_width}) must be in range [128, 512]")
 
     params_dict = {
         "scene": scene,
@@ -276,20 +301,12 @@ def submit_video_batch_to_api(
     )
 
 
-def download_completed_previews(
-    completed_previews: List[ca.CompletedJob], output_dir: str
-) -> List[str]:
-    return ca.download_completed_jobs(
-        completed_jobs=completed_previews, output_dir=output_dir
-    )
+def download_completed_previews(completed_previews: List[ca.CompletedJob], output_dir: str) -> List[str]:
+    return ca.download_completed_jobs(completed_jobs=completed_previews, output_dir=output_dir)
 
 
-def download_completed_videos(
-    completed_jobs: List[ca.CompletedJob], output_dir: str
-) -> List[str]:
-    return ca.download_completed_jobs(
-        completed_jobs=completed_jobs, output_dir=output_dir
-    )
+def download_completed_videos(completed_jobs: List[ca.CompletedJob], output_dir: str) -> List[str]:
+    return ca.download_completed_jobs(completed_jobs=completed_jobs, output_dir=output_dir)
 
 
 def get_all_preview_images(folders: List[str]) -> List[str]:
@@ -326,11 +343,13 @@ def _expand_overrides_across_each_base(
     base_state_ids: List[str],
     override_params: List[Dict],
 ) -> List[Dict]:
-    assert seed_ty in {JobType.PREVIEW, JobType.VIDEO}
+    if seed_ty not in {JobType.PREVIEW, JobType.VIDEO}:
+        raise ValueError(f"`seed_ty` ({seed_ty}) is not supported")
 
     ALL_PARAM_KEYS = [T[0] for T in PARAMS_WITH_DESCR]
     for override_dict in override_params:
-        assert all([k in ALL_PARAM_KEYS for k in override_dict.keys()])
+        if not all([k in ALL_PARAM_KEYS for k in override_dict.keys()]):
+            raise ValueError(f"Not all override parameters are supported")
 
     params_with_overrides = []
     for seed in base_state_ids:
@@ -339,9 +358,7 @@ def _expand_overrides_across_each_base(
         else:
             original_params = fetch_job_params_by_id(token=token, job_id=seed)
 
-        params_with_overrides.extend(
-            [{**original_params, **op, **{"state": seed}} for op in override_params]
-        )
+        params_with_overrides.extend([{**original_params, **op, **{"state": seed}} for op in override_params])
 
     return params_with_overrides
 
@@ -381,17 +398,18 @@ def _submit_rerun_batch_with_overrides(
     output_folder: str,
     batch_folder_suffix: Optional[str] = None,
 ) -> Tuple[Batch, Optional[str]]:
-    assert job_ty in {JobType.PREVIEW, JobType.VIDEO}
-    assert seed_ty in {JobType.PREVIEW, JobType.VIDEO}
+    if job_ty not in {JobType.PREVIEW, JobType.VIDEO}:
+        raise ValueError(f"`job_ty` ({job_ty}) is not supported")
+    if seed_ty not in {JobType.PREVIEW, JobType.VIDEO}:
+        raise ValueError(f"`seed_ty` ({seed_ty}) is not supported")
 
     ALL_PARAM_KEYS = [T[0] for T in PARAMS_WITH_DESCR]
     for override_dict in override_params:
-        assert all([k in ALL_PARAM_KEYS for k in override_dict.keys()])
+        if not all([k in ALL_PARAM_KEYS for k in override_dict.keys()]):
+            raise ValueError(f"Not all override parameters are supported")
 
     if seed_ty == JobType.PREVIEW:
-        original_params = fetch_preview_params_by_id(
-            token=token, preview_id=base_state_id
-        )
+        original_params = fetch_preview_params_by_id(token=token, preview_id=base_state_id)
     else:
         original_params = fetch_job_params_by_id(token=token, job_id=base_state_id)
 

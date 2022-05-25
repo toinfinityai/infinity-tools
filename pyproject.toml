@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "infinity-tools"
-version = "0.1.0"
+version = "0.2.0"
 description = ""
 authors = ["Daniel Hensley <daniel@toinfinity.ai>"]
 
@@ -24,6 +24,9 @@ jupyter = "^1.0.0"
 
 [tool.poetry.dev-dependencies]
 pytest = "^5.2"
+
+[tool.black]
+line-length = 120
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]

@@ -10,7 +10,6 @@ TOKEN = "TOKEN"
 
 
 def test_version():
-
     def get_job_version(server: str, job_name: str) -> str:
         r = requests.get(
             f"{server}/api/jobs/",

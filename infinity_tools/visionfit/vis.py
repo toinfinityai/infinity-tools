@@ -57,15 +57,9 @@ def visualize_all_labels(video_job_folder: str) -> str:
     rep_count = parse_rep_count_from_json(video_json_path)
     coco = COCO(video_json_path)
 
-    bounding_box_path = create_bounding_boxes_video(
-        os.path.join(output_directory, "bounding_box.mp4"), imgs, fps, coco
-    )
-    skeleton_path = create_keypoint_connections_video(
-        os.path.join(output_directory, "skeleton.mp4"), imgs, fps, coco
-    )
-    cuboids_path = create_cuboids_video(
-        os.path.join(output_directory, "cuboids.mp4"), imgs, fps, coco
-    )
+    bounding_box_path = create_bounding_boxes_video(os.path.join(output_directory, "bounding_box.mp4"), imgs, fps, coco)
+    skeleton_path = create_keypoint_connections_video(os.path.join(output_directory, "skeleton.mp4"), imgs, fps, coco)
+    cuboids_path = create_cuboids_video(os.path.join(output_directory, "cuboids.mp4"), imgs, fps, coco)
     _3D_path = create_3D_keypoints_video(
         os.path.join(output_directory, "3D_keypoints.mp4"),
         fps,
@@ -99,9 +93,7 @@ def visualize_all_labels(video_job_folder: str) -> str:
     return stack_videos([label_grid_path, ts_path], axis=2)
 
 
-def parse_rep_count_from_json(
-    json_path: str, rep_count_col: str = "rep_count_from_start"
-) -> List[float]:
+def parse_rep_count_from_json(json_path: str, rep_count_col: str = "rep_count_from_start") -> List[float]:
     return [x[rep_count_col] for x in json.load(open(json_path))["images"]]
 
 
@@ -167,9 +159,7 @@ def animate_time_series(
     return output_path
 
 
-def create_bounding_boxes_video(
-    output_path: str, imgs: npt.NDArray, fps: int, coco: Any
-) -> str:
+def create_bounding_boxes_video(output_path: str, imgs: npt.NDArray, fps: int, coco: Any) -> str:
     """Overlays bounding box annotations onto video.
 
     Args:
@@ -194,9 +184,7 @@ def create_bounding_boxes_video(
             if "bbox" not in ann:
                 continue
             x, y, w, h = tuple(np.array(ann["bbox"]).astype(int))
-            cv2.rectangle(
-                canvas, (x, y), (x + w, y + h), color=(255, 255, 255), thickness=2
-            )
+            cv2.rectangle(canvas, (x, y), (x + w, y + h), color=(255, 255, 255), thickness=2)
         out.write(canvas)
     out.release()
     return output_path
@@ -210,15 +198,11 @@ def get_project_root() -> str:
 def get_armature_connections() -> Dict:
     """Returns armature connections from local json file."""
     project_root = get_project_root()
-    armature_json = os.path.join(
-        project_root, "common", "vis", "assets", "armature_connections.json"
-    )
+    armature_json = os.path.join(project_root, "common", "vis", "assets", "armature_connections.json")
     return json.load(open(armature_json, "r"))
 
 
-def create_keypoint_connections_video(
-    output_path: str, imgs: npt.NDArray, fps: int, coco: Any
-) -> str:
+def create_keypoint_connections_video(output_path: str, imgs: npt.NDArray, fps: int, coco: Any) -> str:
     """Overlays keypoint connection annotations onto video.
 
     Args:
@@ -250,18 +234,14 @@ def create_keypoint_connections_video(
                 x1 = keypoints[child]["x"]
                 y1 = keypoints[child]["y"]
                 cv2.line(canvas, (x0, y0), (x1, y1), color=(255, 255, 255), thickness=2)
-                cv2.circle(
-                    canvas, (x0, y0), radius=4, color=(255, 255, 255), thickness=-1
-                )
+                cv2.circle(canvas, (x0, y0), radius=4, color=(255, 255, 255), thickness=-1)
 
         out.write(canvas)
     out.release()
     return output_path
 
 
-def create_cuboids_video(
-    output_path: str, imgs: npt.NDArray, fps: int, coco: Any
-) -> str:
+def create_cuboids_video(output_path: str, imgs: npt.NDArray, fps: int, coco: Any) -> str:
     """Overlays cuboid annotations onto video.
 
     Args:
@@ -303,9 +283,7 @@ def create_cuboids_video(
             for edge in cuboid_edges:
                 start_point = [cuboid_points[edge[0]]["x"], cuboid_points[edge[0]]["y"]]
                 end_point = [cuboid_points[edge[1]]["x"], cuboid_points[edge[1]]["y"]]
-                color = tuple(
-                    [int(255 * x) for x in coco.cats[ann["category_id"]]["color"][::-1]]
-                )
+                color = tuple([int(255 * x) for x in coco.cats[ann["category_id"]]["color"][::-1]])
                 color = (255, 255, 255)
                 canvas = cv2.line(
                     canvas,
@@ -319,9 +297,7 @@ def create_cuboids_video(
     return output_path
 
 
-def create_2D_keypoints_video(
-    output_path: str, imgs: npt.NDArray, fps: int, coco: Any
-) -> str:
+def create_2D_keypoints_video(output_path: str, imgs: npt.NDArray, fps: int, coco: Any) -> str:
     """Overlays 2D keypoints onto video.
 
     Args:
@@ -351,9 +327,7 @@ def create_2D_keypoints_video(
                 if keypoint_name == "root":
                     continue
                 x, y = keypoint_info["x"], keypoint_info["y"]
-                cv2.circle(
-                    canvas, (x, y), radius=3, color=(255, 255, 255), thickness=-1
-                )
+                cv2.circle(canvas, (x, y), radius=3, color=(255, 255, 255), thickness=-1)
         out.write(canvas)
     out.release()
     return output_path
@@ -411,9 +385,7 @@ def create_3D_keypoints_video(
         angle = num * 180 / global_coords.shape[0]
         ax.view_init(30, angle)
 
-    graph = ax.scatter(
-        global_coords[0, :, 0], global_coords[0, :, 1], global_coords[0, :, 2]
-    )
+    graph = ax.scatter(global_coords[0, :, 0], global_coords[0, :, 1], global_coords[0, :, 2])
 
     ax.set_box_aspect(np.ptp(global_coords, axis=(0, 1)))
     ax.set_xticks([])
@@ -421,17 +393,13 @@ def create_3D_keypoints_video(
     ax.set_zticks([])
     ax.grid("off")
 
-    ani = animation.FuncAnimation(
-        fig, update, global_coords.shape[0], blit=False, interval=1000 / fps
-    )
+    ani = animation.FuncAnimation(fig, update, global_coords.shape[0], blit=False, interval=1000 / fps)
     ani.save(output_path)
     plt.close()
     return output_path
 
 
-def create_segmentation_video(
-    output_path: str, folder: str, fps: int, image_width: int, image_height: int
-) -> str:
+def create_segmentation_video(output_path: str, folder: str, fps: int, image_width: int, image_height: int) -> str:
     """Creates a video of frame-wise segmentation masks.
 
     Args:
@@ -469,9 +437,7 @@ def summarize_batch_results_as_dataframe(batch_folder: str) -> pd.DataFrame:
         except:  # noqa: E722
             return x
 
-    rgb_jsons = glob.glob(
-        os.path.join(batch_folder, "**/video.rgb.json"), recursive=True
-    )
+    rgb_jsons = glob.glob(os.path.join(batch_folder, "**/video.rgb.json"), recursive=True)
 
     metadata = []
     for rgb_json in rgb_jsons:
@@ -483,19 +449,9 @@ def summarize_batch_results_as_dataframe(batch_folder: str) -> pd.DataFrame:
         num_frames = len(json_data["images"])
         anns = json_data["annotations"]
         person_cat_id = {e["name"]: e["id"] for e in json_data["categories"]}["person"]
-        avg_percent_in_fov = np.mean(
-            [
-                ann["percent_in_fov"]
-                for ann in anns
-                if ann["category_id"] == person_cat_id
-            ]
-        )
+        avg_percent_in_fov = np.mean([ann["percent_in_fov"] for ann in anns if ann["category_id"] == person_cat_id])
         avg_percent_occlusion = np.mean(
-            [
-                ann["percent_occlusion"]
-                for ann in anns
-                if ann["category_id"] == person_cat_id
-            ]
+            [ann["percent_occlusion"] for ann in anns if ann["category_id"] == person_cat_id]
         )
         video_metadata = {
             "job_path": full_path,
@@ -521,9 +477,7 @@ def visualize_batch_results(batch_folder: str):
             return x
 
     df = summarize_batch_results_as_dataframe(batch_folder)
-    columns_to_keep = [
-        column for column in df.columns if column not in ["job_path", "job_id", "state"]
-    ]
+    columns_to_keep = [column for column in df.columns if column not in ["job_path", "job_id", "state"]]
     df = df[columns_to_keep]
     color = colors.qualitative.Plotly[0]
     df = df.apply(_convert_to_float, axis=0)
@@ -538,13 +492,7 @@ def visualize_batch_results(batch_folder: str):
         if row * col > len(df.columns):
             break
 
-        subfig = go.Figure(
-            data=[
-                go.Histogram(
-                    x=df[col_name], name=col_name, nbinsx=10, marker=dict(color=color)
-                )
-            ]
-        )
+        subfig = go.Figure(data=[go.Histogram(x=df[col_name], name=col_name, nbinsx=10, marker=dict(color=color))])
         fig.add_trace(subfig.data[0], row=row, col=col)
         fig.update_layout(
             template="plotly_white",
@@ -564,9 +512,7 @@ def display_batch_results(batch_folder: str) -> None:
     display(HTML(metadata.to_html()))
 
 
-def crop_pad_video(
-    video_path: str, image_width: int = 192, image_height: int = 192
-) -> str:
+def crop_pad_video(video_path: str, image_width: int = 192, image_height: int = 192) -> str:
     """Crops and pads a video to a standard size."""
     cap = cv2.VideoCapture(video_path)
     fps = int(cap.get(cv2.CAP_PROP_FPS))
@@ -574,10 +520,7 @@ def crop_pad_video(
     fourcc = cv2.VideoWriter_fourcc(*"mp4v")
     out = cv2.VideoWriter(output_path, fourcc, fps, (image_width, image_height))
     video_frames = parse_video_frames(video_path)
-    video_frames = [
-        preprocess_frame(frame).numpy().squeeze().astype(np.uint8)
-        for frame in video_frames
-    ]
+    video_frames = [preprocess_frame(frame).numpy().squeeze().astype(np.uint8) for frame in video_frames]
     for frame in video_frames:
         out.write(frame)
     out.release()
@@ -586,31 +529,20 @@ def crop_pad_video(
 
 def overlay_movenet_on_video(video_path: str, output_path: str):
     """Applies MoveNet to video and returns rendered video path."""
-    cropped_video = crop_pad_video(
-        video_path
-    )  # pre-crop and pad here to get aspect ratio.
+    cropped_video = crop_pad_video(video_path)  # pre-crop and pad here to get aspect ratio.
     landmarks_from_video = apply_movenet_to_video(video_path)
     return visualize_landmarks(cropped_video, landmarks_from_video, output_path)
 
 
-def view_batch_folder_with_movenet_overlay(
-    batch_folder: str, num_per_row: int = 4, limit_videos: int = 12
-) -> str:
+def view_batch_folder_with_movenet_overlay(batch_folder: str, num_per_row: int = 4, limit_videos: int = 12) -> str:
     """Visualizes a batch folder with movenet overlay."""
     video_paths = glob.glob(os.path.join(batch_folder, "**/*.rgb.mp4"))[:limit_videos]
-    output_paths = [
-        path.replace(".rgb.mp4", ".rgb_movenet.mp4") for path in video_paths
-    ]
-    movenet_paths = [
-        overlay_movenet_on_video(path, output)
-        for path, output in list(zip(video_paths, output_paths))
-    ]
+    output_paths = [path.replace(".rgb.mp4", ".rgb_movenet.mp4") for path in video_paths]
+    movenet_paths = [overlay_movenet_on_video(path, output) for path, output in list(zip(video_paths, output_paths))]
     return create_grid_of_videos(movenet_paths, num_per_row=num_per_row)
 
 
-def visualize_landmarks(
-    video_path: str, landmarks: List[npt.NDArray], output_path: str
-) -> str:
+def visualize_landmarks(video_path: str, landmarks: List[npt.NDArray], output_path: str) -> str:
     """Visualizes MoveNet landmarks for a single video.
 
     Args:

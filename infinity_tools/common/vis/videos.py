@@ -6,9 +6,7 @@ import numpy.typing as npt
 from typing import List, Optional
 
 
-def parse_video_frames(
-    video_path: str, height: Optional[int] = None, width: Optional[int] = None
-) -> npt.NDArray:
+def parse_video_frames(video_path: str, height: Optional[int] = None, width: Optional[int] = None) -> npt.NDArray:
     """Parses video frames from a video.
 
     Args:
@@ -22,7 +20,8 @@ def parse_video_frames(
     cap = cv2.VideoCapture(video_path)
     frames = []
     if height is not None:
-        assert width is None
+        if width is not None:
+            raise ValueError(f"Both `height` and `width` provided")
     while cap.isOpened():
         ret, frame = cap.read()
         if not ret:
@@ -58,7 +57,8 @@ def stack_videos(
         A path to the stacked video (embedded, actual)
     """
 
-    assert axis in [1, 2]
+    if axis not in [1, 2]:
+        raise ValueError(f"`axis` ({axis}) must be 1 or 2")
 
     heights = []
     widths = []
@@ -76,12 +76,14 @@ def stack_videos(
     parse_kwargs = {}
     if axis == 1:
         if fixed_size is None:
-            assert all(e == widths[0] for e in widths)
+            if not all(e == widths[0] for e in widths):
+                raise ValueError("Not all widths are the same size")
         else:
             parse_kwargs = {"width": fixed_size}
     elif axis == 2:
         if fixed_size is None:
-            assert all(e == heights[0] for e in heights)
+            if not all(e == heights[0] for e in heights):
+                raise ValueError("Not all heights are the same size")
         else:
             parse_kwargs = {"height": fixed_size}
     all_frames = tuple([parse_video_frames(path, **parse_kwargs) for path in paths])
@@ -94,9 +96,7 @@ def stack_videos(
 
     if num_pad_axis:
         for i in range(num_pad_axis):
-            new_video = (
-                np.ones((len(all_frames), widths[0], heights[0], 3)) * 255
-            ).astype(np.uint8)
+            new_video = (np.ones((len(all_frames), widths[0], heights[0], 3)) * 255).astype(np.uint8)
             all_frames = np.concatenate([all_frames, new_video], axis=axis)
 
     fourcc = cv2.VideoWriter_fourcc(*"mp4v")
@@ -130,9 +130,7 @@ def create_grid_of_videos(video_paths: List[str], num_per_row: int) -> str:
     else:
         num_rows = num_videos // num_per_row + 1
         num_to_pad = (num_per_row * num_rows) - num_videos
-        row_indices = np.arange(0, num_videos + num_to_pad).reshape(
-            (num_rows, num_per_row)
-        )
+        row_indices = np.arange(0, num_videos + num_to_pad).reshape((num_rows, num_per_row))
 
     if num_rows == 1:
         return stack_videos(video_paths, axis=2)
@@ -144,16 +142,12 @@ def create_grid_of_videos(video_paths: List[str], num_per_row: int) -> str:
                 row = stack_videos(video_paths[row_ind], axis=2)
 
             else:
-                row = stack_videos(
-                    video_paths[min(row_ind) :], num_pad_axis=num_to_pad, axis=2
-                )
+                row = stack_videos(video_paths[min(row_ind) :], num_pad_axis=num_to_pad, axis=2)
             rows.append(row)
         return stack_videos(rows, axis=1)
 
 
-def overlay_repcount_pred(
-    video_path: str, pred_count: List[int], output_path: str, font_scale: int = 3
-):
+def overlay_repcount_pred(video_path: str, pred_count: List[int], output_path: str, font_scale: int = 3):
     """Overlays predicted rep count value onto original test video.
 
     Args:

@@ -103,9 +103,7 @@ class BaseGenerator(tf.keras.utils.Sequence):
         self.num_batch_cycles = int(np.ceil(self.num_seqs / self.batch_size))
 
         seq_lens = [len(seq) for seq in sequences_X]
-        self.fixed_seq_len = min(seq_lens) - (
-            min(seq_lens) % window_len
-        )  # round down to be divisible
+        self.fixed_seq_len = min(seq_lens) - (min(seq_lens) % window_len)  # round down to be divisible
         self.num_windows = int(self.fixed_seq_len / self.window_len)
         self.prepare_epoch()
 
@@ -138,12 +136,8 @@ class BaseGenerator(tf.keras.utils.Sequence):
                 the current epoch.
         """
 
-        sequences_X = [
-            self.sequences_X[i] for i in self.batch_cycle_indices[batch_cycle]
-        ]
-        sequences_y = [
-            self.sequences_y[i] for i in self.batch_cycle_indices[batch_cycle]
-        ]
+        sequences_X = [self.sequences_X[i] for i in self.batch_cycle_indices[batch_cycle]]
+        sequences_y = [self.sequences_y[i] for i in self.batch_cycle_indices[batch_cycle]]
 
         batch_cycle_X = []
         batch_cycle_y = []
@@ -154,9 +148,7 @@ class BaseGenerator(tf.keras.utils.Sequence):
             batch_cycle_y.append(seq_y[offset : (offset + self.fixed_seq_len)])
         self.batch_cycle_X = np.array(batch_cycle_X).astype(float)
         self.batch_cycle_y = np.array(batch_cycle_y)
-        self.batch_cycle_sample_weight = np.where(
-            self.batch_cycle_y, self.class_weights[1], self.class_weights[0]
-        )
+        self.batch_cycle_sample_weight = np.where(self.batch_cycle_y, self.class_weights[1], self.class_weights[0])
 
     def __len__(self) -> int:
         """Returns number of mini-batches generated in one epoch."""
@@ -188,9 +180,7 @@ class BaseGenerator(tf.keras.utils.Sequence):
         self.prepare_epoch()
 
     @staticmethod
-    def featurize_repcount(
-        y_input: List[npt.NDArray], binarize_threshold: float
-    ) -> List[npt.NDArray]:
+    def featurize_repcount(y_input: List[npt.NDArray], binarize_threshold: float) -> List[npt.NDArray]:
         """Converts rep count to binary label Based on proximity to rep completion.
 
         Args:
