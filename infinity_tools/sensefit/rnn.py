@@ -22,8 +22,6 @@ class SenseFitModel(BaseModel):
                 _output_tag = ""
             pred_path = data_path.replace(".csv", f"_pred{_output_tag}.mp4")
             overlay_repcount_pred(video_path, pred_count, pred_path)
-            display_video_as_gif(
-                pred_path, downsample_resolution=3, downsample_frames=3
-            )
+            display_video_as_gif(pred_path, downsample_resolution=3, downsample_frames=3)
         else:
             plot_predictions(data_path, pred_count)

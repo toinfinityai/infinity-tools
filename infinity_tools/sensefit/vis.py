@@ -52,9 +52,7 @@ def animate_test_video(video_path: str, display_width: int = 600):
     fps = int(cap.get(cv2.CAP_PROP_FPS))
 
     make_realworld_timeseries_video(csv_path, ts_path, total_frames, fps)
-    stack_videos(
-        paths=[video_path, ts_path], output_path=merged_path, fixed_size=400, axis=2
-    )
+    stack_videos(paths=[video_path, ts_path], output_path=merged_path, fixed_size=400, axis=2)
     display_video_as_gif(
         video_path=merged_path,
         display_width=display_width,
@@ -63,9 +61,7 @@ def animate_test_video(video_path: str, display_width: int = 600):
     )
 
 
-def make_realworld_timeseries_video(
-    csv_path: str, output_path: str, total_frames: int, fps: int
-):
+def make_realworld_timeseries_video(csv_path: str, output_path: str, total_frames: int, fps: int):
     """Generates time series animation for real-world data.
 
     Args:

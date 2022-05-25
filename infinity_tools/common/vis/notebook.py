@@ -46,13 +46,7 @@ def visualize_job_params(job_params: List[Dict]):
         if row * col > len(df.columns):
             break
 
-        subfig = go.Figure(
-            data=[
-                go.Histogram(
-                    x=df[col_name], name=col_name, nbinsx=10, marker=dict(color=color)
-                )
-            ]
-        )
+        subfig = go.Figure(data=[go.Histogram(x=df[col_name], name=col_name, nbinsx=10, marker=dict(color=color))])
         fig.add_trace(subfig.data[0], row=row, col=col)
         fig.update_layout(
             template="plotly_white",
@@ -66,9 +60,7 @@ def visualize_job_params(job_params: List[Dict]):
 
 
 def display_image(image_path: str, display_width: int = 600):
-    display(
-        Image(data=open(image_path, "rb").read(), format="png", width=display_width)
-    )
+    display(Image(data=open(image_path, "rb").read(), format="png", width=display_width))
 
 
 def display_plotly_as_image(fig: go.Figure, output_path: str, display_width: int = 600):
@@ -118,7 +110,5 @@ def display_video_as_gif(
             frame = frame[::downsample_resolution, ::downsample_resolution, :]
             frames.append(frame)
         frame_index += 1
-    imageio.mimsave(
-        output_path, frames, format="GIF", duration=1 / fps * downsample_frames
-    )
+    imageio.mimsave(output_path, frames, format="GIF", duration=1 / fps * downsample_frames)
     display_image(output_path, display_width)

@@ -121,9 +121,7 @@ class Batch:
                 completed_invalid_jobs.append(cj)
         return completed_valid_jobs, completed_invalid_jobs
 
-    def await_jobs(
-        self, timeout: int = 3 * 60 * 60, polling_interval: int = 10
-    ) -> List[CompletedJob]:
+    def await_jobs(self, timeout: int = 3 * 60 * 60, polling_interval: float = 10) -> List[CompletedJob]:
         """Waits for all jobs in batch to complete.
 
         Args:
@@ -223,8 +221,12 @@ def submit_batch_to_api(
     output_dir: str,
     job_params: List[Dict],
     write_submission_status_to_file: bool = True,
+    request_delay: float = 0.05,
 ) -> Tuple[Batch, Optional[str]]:
     """Submits a batch of jobs to the API.
+
+    Args:
+        request_delay: Delay between requests, s
 
     Returns:
         Tuple of corresponding `Batch` object and a path to its metadata on disk.
@@ -252,14 +254,10 @@ def submit_batch_to_api(
         )
         if r.status_code == 201:
             job_id = r.json()["id"]
-            successful_requests.append(
-                SuccessfulJobRequest(job_id=job_id, params=params)
-            )
+            successful_requests.append(SuccessfulJobRequest(job_id=job_id, params=params))
         else:
-            failed_requests.append(
-                FailedJobRequest(status_code=r.status_code, params=params)
-            )
-        time.sleep(0.05)
+            failed_requests.append(FailedJobRequest(status_code=r.status_code, params=params))
+        time.sleep(request_delay)
 
     batch = Batch(
         uid=batch_uid,
@@ -286,9 +284,7 @@ def submit_batch_to_api(
     return batch, batch_path
 
 
-def download_completed_jobs(
-    completed_jobs: List[CompletedJob], output_dir: str
-) -> List[str]:
+def download_completed_jobs(completed_jobs: List[CompletedJob], output_dir: str) -> List[str]:
     """Downloads completed jobs to output directory.
 
     Returns:

@@ -45,9 +45,7 @@ class VisionFitGenerator(BaseGenerator):
         batch_size: int,
         class_weights: Dict[int, float],
     ):
-        super().__init__(
-            sequences_X, sequences_y, window_len, batch_size, class_weights
-        )
+        super().__init__(sequences_X, sequences_y, window_len, batch_size, class_weights)
 
     @staticmethod
     def featurize_data(sequences_X: List[npt.NDArray]) -> List[npt.NDArray]:
@@ -55,16 +53,12 @@ class VisionFitGenerator(BaseGenerator):
         return preprocess_keypoints(sequences_X)
 
     @staticmethod
-    def load_data(
-        video_path: str, json_path: str = None
-    ) -> Tuple[npt.NDArray, npt.NDArray]:
+    def load_data(video_path: str, json_path: str = None) -> Tuple[npt.NDArray, npt.NDArray]:
         """Loads X,y data from a single example."""
         sequence_X = apply_movenet_to_video(video_path)
         if json_path:
             json_file = json.load(open(json_path))
-            sequence_y = np.array(
-                [img["rep_count_from_start"] for img in json_file["images"]]
-            ).flatten()
+            sequence_y = np.array([img["rep_count_from_start"] for img in json_file["images"]]).flatten()
         else:
             sequence_y = None
         return sequence_X, sequence_y
@@ -123,9 +117,7 @@ def apply_movenet_to_video(video_path: str) -> npt.NDArray:
     return np.array(video_results)
 
 
-def angle_from_three_points(
-    a: npt.NDArray, b: npt.NDArray, c: npt.NDArray
-) -> npt.NDArray:
+def angle_from_three_points(a: npt.NDArray, b: npt.NDArray, c: npt.NDArray) -> npt.NDArray:
     """Calculates angles between three points in 2D space.
 
     Args:
@@ -177,8 +169,7 @@ def preprocess_keypoints(X_input: List[npt.NDArray]) -> List[npt.NDArray]:
     left_angle_combs = list(itertools.permutations(left_landmarks, 3))
     right_angle_combs = list(itertools.permutations(right_landmarks, 3))
     angle_comb_indices = [
-        [landmarks_of_interest.index(e) for e in angle_comb]
-        for angle_comb in (left_angle_combs + right_angle_combs)
+        [landmarks_of_interest.index(e) for e in angle_comb] for angle_comb in (left_angle_combs + right_angle_combs)
     ]
     X_output = []
     for X in X_input:
