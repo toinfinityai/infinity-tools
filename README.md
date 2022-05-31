@@ -21,21 +21,14 @@ The [common](infinity_tools/common/) submodule contains data structures and func
 
 # Installation
 
-You can use either a Python virtual environment or Conda to install this package.
-If you are using an ARM-based Mac (e.g. M1), please use conda, as noted in the instructions
-below.
+You can use Conda to install this package.
+
+Ensure you are using conda with the [conda-forge](https://conda-forge.org/) channel. You can check that this is the case with `conda config --show channels`. We recommend using `miniforge` for your conda installation (instructions [here](https://github.com/conda-forge/miniforge)), which sets `conda-forge` as the default channel.
 
 ## OS X (Intel) or Linux
-- Create a virtualenv or fresh Conda environment 
-    - Using Conda:
-        - `conda create --name infinity python=3.9`
-        - `conda activate infinity`
-    - Using virtualenv
-        - Make sure you have python 3.8, 3.9, or 3.10
-        - Create new environment
-            - `python -m venv env`
-        - Activate your virtual environment
-            - `source env/bin/activate`
+- Create a fresh Conda environment 
+    - `conda create --name infinity python=3.9`
+    - `conda activate infinity`
 - Make sure you have the latest pip
     - `python -m pip install --upgrade pip`
 - Clone the repo 
@@ -44,11 +37,9 @@ below.
     - `pip install -e PATH_TO_INFINITY_TOOLS`
 
 ## OS X (ARM-based such as M1)
-- Ensure you are using conda with the [conda-forge](https://conda-forge.org/) channel. You can check that this is the case with `conda config --show channels`. We recommend using `miniforge` for your conda installation (instructions [here](https://github.com/conda-forge/miniforge)), which sets `conda-forge` as the default channel.
-- Create a fresh Conda env 
-    - Using conda:
-        - `conda create --name infinity python=3.9`
-        - `conda activate infinity`
+- Create a fresh Conda environment
+    - `conda create --name infinity python=3.9`
+    - `conda activate infinity`
 - Make sure you have the latest pip
     - `python -m pip install --upgrade pip`
 - Clone the repo 
