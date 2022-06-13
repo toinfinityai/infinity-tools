@@ -9,7 +9,7 @@ import infinity_tools.common.api as ca
 from infinity_tools.common.api import Batch
 
 SERVER_URL = "https://api.toinfinity.ai"
-GENERATOR = "visionfit"
+GENERATOR = "visionfit-v0.3.0"
 RUN_ENDPOINT = "/api/jobs/run/"
 RUN_QUERY_ENDPOINT = "/api/job_runs/"
 PREVIEW_ENDPOINT = "/api/jobs/preview/"
@@ -22,43 +22,62 @@ SCENE_LST = [
     "BEDROOM_5",
 ]
 EXERCISE_LST = [
-    "LEG_RAISE",
-    "SUPERMAN",
-    "ARM_RAISE",
-    "BACK_SQUAT",
-    "BICEP_CURL",
-    "BENT_OVER_TRICEP_KICKBACK_RIGHT",
+    "LEG_RAISE",  # legacy
+    "SUPERMAN",  # legacy
+    "ARM_RAISE-DUMBBELL",  # legacy
+    "BEAR_CRAWL-HOLDS",
+    "BICEP_CURL-ALTERNATING-DUMBBELL",
+    "BICEP_CURL-BARBELL",
+    "BIRD_DOG",
+    "BRIDGE",
     "BURPEE",
-    "CRUNCH",
-    "DEADLIFT",
-    "EXPLOSIVE_PUSH_UP",
-    "PUSH_PRESS_LEFT",
-    "PUSH_UP",
-    "PRESS_LEFT",
-    "SPLIT_SQUAT_RIGHT",
-    "SIT_UP",
-    "UPPERCUT_LEFT",
+    "CLAMSHELL-LEFT",
+    "CLAMSHELL-RIGHT",
+    "CRUNCHES",
+    "DEADLIFT-DUMBBELL",
+    "DONKEY_KICK-LEFT",
+    "DONKEY_KICK-RIGHT",
+    "DOWNWARD_DOG",
+    "LUNGE-CROSSBACK",
+    "PRESS-SINGLE_ARM-DUMBBELL-LEFT",
+    "PRESS-SINGLE_ARM-DUMBBELL-RIGHT",
+    "PUSHUP",
+    "PUSHUP-CLOSE_GRIP",
+    "PUSHUP-EXPLOSIVE",
+    "PUSH_PRESS-SINGLE_ARM-DUMBBELL-LEFT",
+    "PUSH_PRESS-SINGLE_ARM-DUMBBELL-RIGHT",
+    "SITUP",
+    "SPLIT_SQUAT-SINGLE_ARM-DUMBBELL-LEFT",
+    "SPLIT_SQUAT-SINGLE_ARM-DUMBBELL-RIGHT",
+    "SQUAT-BACK-BARBELL",
+    "SQUAT-BODYWEIGHT",
+    "SQUAT-GOBLET+SUMO-DUMBBELL",
+    "TRICEP_KICKBACK-BENT_OVER+SINGLE_ARM-DUMBBELL-LEFT",
+    "TRICEP_KICKBACK-BENT_OVER+SINGLE_ARM-DUMBBELL-RIGHT",
+    "UPPERCUT-LEFT",
+    "UPPERCUT-RIGHT",
     "V_UP",
 ]
 GENDER_LST = ["MALE", "FEMALE"]
 FRAME_RATE_LST = [30, 24, 12, 8, 6]
 IMAGE_DIM_LST = [256, 512]
+NUM_IDENTITIES = 25
 PARAMS_WITH_DESCR = [
     (
         "scene",
         "Background environment/scene",
         "None",
-        "['GYM_1', 'BEDROOM_2', 'BEDROOM_4', 'BEDROOM_5']",
+        "[GYM_1, BEDROOM_2, BEDROOM_4, BEDROOM_5]",
     ),
     (
         "exercise",
         "Exercise animation",
         "None",
-        "['LEG_RAISE', 'SUPERMAN', 'ARM_RAISE', 'BACK_SQUAT', 'BICEP_CURL', 'BENT_OVER_TRICEP_KICKBACK_RIGHT', 'BURPEE', 'CRUNCH', 'DEADLIFT', 'EXPLOSIVE_PUSH_UP', 'PUSH_PRESS_LEFT', 'PUSH_UP', 'PRESS_LEFT', 'SPLIT_SQUAT_RIGHT', 'SIT_UP', 'UPPERCUT_LEFT', 'V_UP']",
+        "[" + ", ".join(sorted(EXERCISE_LST)) + "]",
     ),
-    ("gender", "Avatar gender", "MALE", "['MALE', 'FEMALE']"),
-    ("num_reps", "Number of base exercise animation repetitions", "1", "1 to 10"),
-    ("seconds_per_rep", "Length of baseline rep in seconds", "1.0", "1.0 to 3.0"),
+    ("gender", "Avatar gender", "MALE", "[MALE, FEMALE]"),
+    ("num_reps", "Number of base exercise animation repetitions", "1", "1 to 20"),
+    ("rel_baseline_speed", "Baseline speed of animation, relative to default (natural) speed", "1.0", "0.33 to 3.0"),
     (
         "max_rel_speed_change",
         "Maximum speed change in reps, relative to the baseline speed; expressed as a fraction between 0 and 1",
@@ -69,21 +88,25 @@ PARAMS_WITH_DESCR = [
         "trim_start_frac",
         "Fraction of seed animation (from start to midpoint) to truncate at the start",
         "0.0",
-        "0.0 to 1.0",
+        "0.0 to 0.9",
     ),
     (
         "trim_end_frac",
         "Fraction of seed animation (from start to midpoint) to truncate at the end",
         "0.0",
-        "0.0 to 1.0",
+        "0.0 to 0.9",
     ),
     (
         "kinematic_noise_factor",
-        "Scalar factor used to change the default kinematic noise added in generated animations",
+        "Scaling factor used to change the default kinematic noise added in generated animations",
         "1.0",
         "0.0 to 2.0",
     ),
-    ("camera_height", "Height of viewing camera", "0.75", "0.1 to 2.75"),
+    ("camera_distance", "Approximate distance between camera and avatar, in meters", "3.0", "1.0 to 5.25"),
+    ("camera_height", "Height of viewing camera, in meters", "0.75", "0.1 to 2.75"),
+    ("avatar_identity", "Integer-based unique idenfier that controls the chosen avatar appearance", "0", "0 to 24"),
+    ("relative_height", "Relative height of avatar (positive values = greater height)", "0.0", "-4.0 to 4.0"),
+    ("relative_weight", "Relative weight of avatar (positive values = greater weight)", "0.0", "-4.0 to 4.0"),
     (
         "relative_camera_yaw_deg",
         "Camera yaw in degrees where 0 is directly facing the avatar",
@@ -103,7 +126,7 @@ PARAMS_WITH_DESCR = [
         "0.0",
         "-180.0 to 180.0",
     ),
-    ("frame_rate", "Output video frame rate", "24", "['30', '24', '12', '8', '6']"),
+    ("frame_rate", "Output video frame rate", "24", "[30, 24, 12, 8, 6]"),
     ("image_width", "Output image/video width in pixels", "256", "128 to 512"),
     ("image_height", "Output image/video height in pixels", "256", "128 to 512"),
 ]
@@ -119,12 +142,16 @@ def sample_input(
     exercise: Optional[str] = None,
     gender: Optional[str] = None,
     num_reps: Optional[int] = None,
-    seconds_per_rep: Optional[float] = None,
+    rel_baseline_speed: Optional[float] = None,
     max_rel_speed_change: Optional[float] = None,
     trim_start_frac: Optional[float] = None,
     trim_end_frac: Optional[float] = None,
     kinematic_noise_factor: Optional[float] = None,
+    camera_distance: Optional[float] = None,
     camera_height: Optional[float] = None,
+    avatar_identity: Optional[int] = None,
+    relative_height: Optional[float] = None,
+    relative_weight: Optional[float] = None,
     relative_camera_yaw_deg: Optional[float] = None,
     relative_camera_pitch_deg: Optional[float] = None,
     lighting_power: Optional[float] = None,
@@ -150,44 +177,76 @@ def sample_input(
         if gender not in GENDER_LST:
             raise ValueError(f"`gender` ({gender}) not in supported gender list ({GENDER_LST})")
     if num_reps is None:
-        num_reps = int(np.random.randint(1, 10))
+        num_reps = int(np.random.randint(1, 11))
     else:
-        if not (1 <= num_reps <= 10):
-            raise ValueError(f"`num_reps` ({num_reps}) must be in range [1, 10]")
-    if seconds_per_rep is None:
-        seconds_per_rep = float(np.random.uniform(1.0, 3.0))
+        if not (1 <= num_reps <= 20):
+            raise ValueError(f"`num_reps` ({num_reps}) must be in range [1, 20]")
+
+    if rel_baseline_speed is None:
+        rel_baseline_speed = float(np.random.uniform(0.5, 2.0))
     else:
-        if not (1.0 <= seconds_per_rep <= 3.0):
-            raise ValueError(f"`seconds_per_rep` ({seconds_per_rep}) must be in range [1.0, 3.0]")
+        if not (0.33 <= rel_baseline_speed <= 3.0):
+            raise ValueError(f"`rel_baseline_speed` ({rel_baseline_speed}) must be in range [0.33, 3.0]")
+
     if max_rel_speed_change is None:
         max_rel_speed_change = float(np.random.uniform(0.0, 0.8))
     else:
         if not (0.0 <= max_rel_speed_change <= 1.0):
             raise ValueError(f"`max_rel_speed_change` ({max_rel_speed_change}) must be in range [0.0, 1.0]")
+
     if trim_start_frac is None:
         trim_start_frac = 0.0
     else:
-        if not (0.0 <= trim_start_frac <= 1.0):
-            raise ValueError(f"`trim_start_frac` ({trim_start_frac}) must be in range [0.0, 1.0]")
+        if not (0.0 <= trim_start_frac <= 0.9):
+            raise ValueError(f"`trim_start_frac` ({trim_start_frac}) must be in range [0.0, 0.9]")
+
     if trim_end_frac is None:
         trim_end_frac = 0.0
     else:
-        if not (0.0 <= trim_end_frac <= 1.0):
-            raise ValueError(f"`trim_end_frac` ({trim_end_frac}) must be in range [0.0, 1.0]")
-    if trim_start_frac + trim_end_frac >= 0.9:
+        if not (0.0 <= trim_end_frac <= 0.9):
+            raise ValueError(f"`trim_end_frac` ({trim_end_frac}) must be in range [0.0, 0.9]")
+
+    if trim_start_frac + trim_end_frac > 0.9:
         raise ValueError(
-            f"The sum of `trim_start_frac` and `trim_end_frac` ({trim_start_frac + trim_end_frac}) must be < 0.9"
+            f"The sum of `trim_start_frac` and `trim_end_frac` ({trim_start_frac + trim_end_frac}) must be <= 0.9"
         )
+
     if kinematic_noise_factor is None:
         kinematic_noise_factor = float(np.random.uniform(0.0, 1.0))
     else:
         if not (0.0 <= kinematic_noise_factor <= 2.0):
             raise ValueError(f"`kinematic_noise_factor` ({kinematic_noise_factor}) must be in range [0.0, 2.0]")
+
+    if camera_distance is None:
+        camera_distance = float(np.random.uniform(2.5, 5.0))
+    else:
+        if not (1.0 <= camera_distance <= 5.25):
+            raise ValueError(f"`camera_distance` ({camera_distance}) must be in range [1.0, 5.25]")
+
     if camera_height is None:
         camera_height = float(np.random.uniform(0.1, 2.75))
     else:
         if not (0.1 <= camera_height <= 2.75):
             raise ValueError(f"`camera_height` ({camera_height}) must be in range [0.1, 2.75]")
+
+    if avatar_identity is None:
+        avatar_identity = int(np.random.randint(NUM_IDENTITIES))
+    else:
+        if not (0 <= avatar_identity <= (NUM_IDENTITIES - 1)) or not isinstance(avatar_identity, int):
+            raise ValueError(f"`avatar_identity` ({avatar_identity}) must be integer in range [0, {NUM_IDENTITIES-1}]")
+
+    if relative_height is None:
+        relative_height = float(np.clip(np.random.normal(), -4.0, 4.0))
+    else:
+        if not (-4.0 <= relative_height <= 4.0):
+            raise ValueError(f"`relative_height` ({relative_height}) must be in range [-4.0, 4.0]")
+
+    if relative_weight is None:
+        relative_weight = float(np.clip(np.random.normal(), -4.0, 4.0))
+    else:
+        if not (-4.0 <= relative_weight <= 4.0):
+            raise ValueError(f"`relative_weight` ({relative_weight}) must be in range [-4.0, 4.0]")
+
     if relative_camera_yaw_deg is None:
         relative_camera_yaw_deg = float(np.random.uniform(-15.0, 15.0))
     else:
@@ -240,12 +299,16 @@ def sample_input(
         "exercise": exercise,
         "gender": gender,
         "num_reps": num_reps,
-        "seconds_per_rep": seconds_per_rep,
+        "rel_baseline_speed": rel_baseline_speed,
         "max_rel_speed_change": max_rel_speed_change,
         "trim_start_frac": trim_start_frac,
         "trim_end_frac": trim_end_frac,
         "kinematic_noise_factor": kinematic_noise_factor,
+        "camera_distance": camera_distance,
         "camera_height": camera_height,
+        "avatar_identity": avatar_identity,
+        "relative_height": relative_height,
+        "relative_weight": relative_weight,
         "relative_camera_yaw_deg": relative_camera_yaw_deg,
         "relative_camera_pitch_deg": relative_camera_pitch_deg,
         "lighting_power": lighting_power,
@@ -349,7 +412,7 @@ def _expand_overrides_across_each_base(
     ALL_PARAM_KEYS = [T[0] for T in PARAMS_WITH_DESCR]
     for override_dict in override_params:
         if not all([k in ALL_PARAM_KEYS for k in override_dict.keys()]):
-            raise ValueError(f"Not all override parameters are supported")
+            raise ValueError("Not all override parameters are supported")
 
     params_with_overrides = []
     for seed in base_state_ids:
@@ -406,7 +469,7 @@ def _submit_rerun_batch_with_overrides(
     ALL_PARAM_KEYS = [T[0] for T in PARAMS_WITH_DESCR]
     for override_dict in override_params:
         if not all([k in ALL_PARAM_KEYS for k in override_dict.keys()]):
-            raise ValueError(f"Not all override parameters are supported")
+            raise ValueError("Not all override parameters are supported")
 
     if seed_ty == JobType.PREVIEW:
         original_params = fetch_preview_params_by_id(token=token, preview_id=base_state_id)
