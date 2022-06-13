@@ -30,7 +30,6 @@ class SuccessfulJobRequest:
 @dataclass(frozen=True)
 class CompletedJob:
     job_id: str
-    status_code: int
     params: Dict
     result_url: Optional[str] = None
 
@@ -46,7 +45,8 @@ class Batch:
     failed_requests: List[FailedJobRequest]
     generator: str
     server: str
-    query_endpoint: str
+    jobs_query_endpoint: str
+    batch_query_endpoint: str
     output_dir: str
     token: str = field(default="", metadata={"serde_skip": True})
 
@@ -86,25 +86,23 @@ class Batch:
 
     def get_completed_jobs(self) -> List[CompletedJob]:
         """Returns list of completed jobs in the batch."""
-        job_ids = [j.job_id for j in self.jobs]
+        r = requests.get(
+            f"{self.server}{self.batch_query_endpoint}",
+            headers={"Authorization": f"Token {self.token}"},
+        )
+        completed_job_payloads = [j for j in r.json() if not j["in_progress"]]
+
+        # Construct dict and loop through completed `job_ids` to preserve order of `self.jobs`.
+        completed_job_payloads_dict = {j["id"]: j for j in completed_job_payloads}
+        completed_jobs_id_set = set(completed_job_payloads_dict.keys())
+        completed_job_ids = [j.job_id for j in self.jobs if j.job_id in completed_jobs_id_set]
+        completed_job_params_dict = {j.job_id: j.params for j in self.jobs if j.job_id in completed_jobs_id_set}
         completed_jobs = []
-        for jid in tqdm(job_ids, desc="Polling jobs"):
-            r = requests.get(
-                f"{self.server}{self.query_endpoint}{jid}/",
-                headers={"Authorization": f"Token {self.token}"},
-            )
-            json_payload = r.json()
-            if json_payload["in_progress"]:
-                continue
-            job_url = json_payload["result_url"] if r.status_code == 200 else None
-            completed_jobs.append(
-                CompletedJob(
-                    job_id=jid,
-                    status_code=r.status_code,
-                    params=json_payload["param_values"],
-                    result_url=job_url,
-                )
-            )
+        for jid in completed_job_ids:
+            job_result_url = completed_job_payloads_dict[jid]["result_url"]
+            params = completed_job_params_dict[jid]
+            completed_jobs.append(CompletedJob(job_id=jid, params=params, result_url=job_result_url))
+
         return completed_jobs
 
     def get_completed_jobs_valid_and_invalid(
@@ -135,31 +133,21 @@ class Batch:
         num_jobs = len(self.jobs)
         if num_jobs == 0:
             return []
-        job_ids = [j.job_id for j in self.jobs]
-        jobs_dict = {j.job_id: j.params for j in self.jobs}
-        remaining_job_ids = set(job_ids)
         start_time = datetime.now()
-        jobs_in_progress = True
-        completed_jobs = 0
+        num_completed_jobs = 0
 
-        while jobs_in_progress:
-            current_iteration_ids = list(remaining_job_ids)
+        while num_completed_jobs != num_jobs:
             elapsed_time = int((datetime.now() - start_time).seconds)
             print(
-                f"{len(remaining_job_ids)} remaining jobs [{elapsed_time:d} s]...\t\t\t",
+                f"{num_jobs - num_completed_jobs} remaining jobs [{elapsed_time:d} s]...\t\t\t",
                 end="\r",
             )
-            for jid in current_iteration_ids:
-                r = requests.get(
-                    f"{self.server}{self.query_endpoint}{jid}/",
-                    headers={"Authorization": f"Token {self.token}"},
-                )
-                if not r.json()["in_progress"]:
-                    remaining_job_ids.remove(jid)
-                    completed_jobs += 1
-                time.sleep(0.01)
-            if completed_jobs == num_jobs:
-                jobs_in_progress = False
+            r = requests.get(
+                f"{self.server}{self.batch_query_endpoint}",
+                headers={"Authorization": f"Token {self.token}"},
+            )
+            completed_job_payloads = [j for j in r.json() if not j["in_progress"]]
+            num_completed_jobs = len(completed_job_payloads)
             if (datetime.now() - start_time).seconds > timeout:
                 raise TimeoutError()
             time.sleep(polling_interval)
@@ -167,21 +155,15 @@ class Batch:
         duration = datetime.now() - start_time
         print(f"Duration for all jobs: {duration.seconds} [s]")
 
+        # Construct dict and loop through `job_ids` to preserve order of `self.jobs`.
+        job_ids = [j.job_id for j in self.jobs]
+        job_params_dict = {j.job_id: j.params for j in self.jobs}
+        completed_job_payloads_dict = {j["id"]: j for j in completed_job_payloads}
         completed_jobs = []
         for jid in job_ids:
-            r = requests.get(
-                f"{self.server}{self.query_endpoint}{jid}/",
-                headers={"Authorization": f"Token {self.token}"},
-            )
-            job_result_url = r.json()["result_url"] if r.status_code == 200 else None
-            completed_jobs.append(
-                CompletedJob(
-                    job_id=jid,
-                    status_code=r.status_code,
-                    params=jobs_dict[jid],
-                    result_url=job_result_url,
-                )
-            )
+            job_result_url = completed_job_payloads_dict[jid]["result_url"]
+            params = job_params_dict[jid]
+            completed_jobs.append(CompletedJob(job_id=jid, params=params, result_url=job_result_url))
 
         return completed_jobs
 
@@ -232,7 +214,6 @@ def submit_batch_to_api(
         Tuple of corresponding `Batch` object and a path to its metadata on disk.
     """
 
-    batch_uid = uuid.uuid4().hex
     batch_time = datetime.now()
     batch_timestamp = batch_time.strftime("%Y%m%d_T%H%M%S%f")
 
@@ -240,12 +221,42 @@ def submit_batch_to_api(
     failed_requests = []
 
     print("Submitting jobs to API...")
-    for params in tqdm(job_params):
+
+    # Submit jobs until first success to get batch ID from the backend.
+    jidx = 0
+    for params in job_params:
         r = requests.post(
             f"{server}{run_endpoint}",
             json={
                 "name": generator,
                 "param_values": params,
+            },
+            headers={
+                "Authorization": f"Token {token}",
+                "Content-Type": "application/json",
+            },
+        )
+        jidx += 1
+        if r.status_code == 201:
+            json_payload = r.json()
+            batch_uid = json_payload["batch_id"]
+            job_id = json_payload["id"]
+            successful_requests.append(SuccessfulJobRequest(job_id=job_id, params=params))
+            break
+        else:
+            failed_requests.append(FailedJobRequest(status_code=r.status_code, params=params))
+        time.sleep(request_delay)
+    else:
+        raise ValueError("All batch jobs failed in submission")
+
+    # Submit the rest of the jobs with the obtained unique batch ID.
+    for params in tqdm(job_params[jidx:]):
+        r = requests.post(
+            f"{server}{run_endpoint}",
+            json={
+                "name": generator,
+                "param_values": params,
+                "batch_id": batch_uid,
             },
             headers={
                 "Authorization": f"Token {token}",
@@ -259,6 +270,8 @@ def submit_batch_to_api(
             failed_requests.append(FailedJobRequest(status_code=r.status_code, params=params))
         time.sleep(request_delay)
 
+    batch_query_endpoint = query_endpoint + f"?batch_id={batch_uid}"
+
     batch = Batch(
         uid=batch_uid,
         timestamp=batch_timestamp,
@@ -267,7 +280,8 @@ def submit_batch_to_api(
         failed_requests=failed_requests,
         generator=generator,
         server=server,
-        query_endpoint=query_endpoint,
+        jobs_query_endpoint=query_endpoint,
+        batch_query_endpoint=batch_query_endpoint,
         token=token,
         output_dir=output_dir,
     )
