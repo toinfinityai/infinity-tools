@@ -9,7 +9,7 @@ import infinity_tools.common.api as ca
 from infinity_tools.common.api import Batch
 
 SERVER_URL = "https://api.toinfinity.ai"
-GENERATOR = "visionfit-v0.3.0"
+GENERATOR = "visionfit-v0.3.1"
 RUN_ENDPOINT = "/api/jobs/run/"
 RUN_QUERY_ENDPOINT = "/api/job_runs/"
 PREVIEW_ENDPOINT = "/api/jobs/preview/"
