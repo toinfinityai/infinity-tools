@@ -6,6 +6,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## [0.4.0] - 2022-08-05
+
+### Changed
+
+- Remove hardcoded parameter definitions/constraints and instead retrieve dynamically from the API.
+- Update visualization tooling for job parameter distributions.
+
 ## [0.3.1] - 2022-07-04
 
 ### Changed
