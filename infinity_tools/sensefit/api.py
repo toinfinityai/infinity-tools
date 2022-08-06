@@ -1,5 +1,6 @@
+import requests
 import numpy as np
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple, Any
 import infinity_tools.common.api as ca
 from infinity_tools.sensefit import vis
 
@@ -8,147 +9,59 @@ GENERATOR = "sensefit-v0.2.0"
 RUN_ENDPOINT = "/api/jobs/run/"
 RUN_QUERY_ENDPOINT = "/api/job_runs/"
 
-EXERCISE_LST = [
-    "BICEP_CURL-DUMBBELL",  # legacy
-    "HAMMER_CURL-DUMBBELL",  # legacy
-    "ARM_RAISE-DUMBBELL",  # legacy
-    "OVERHEAD_PRESS-DUMBBELL",  # legacy
-    "BEAR_CRAWL-HOLDS",
-    "BICEP_CURL-ALTERNATING-DUMBBELL",
-    "BICEP_CURL-BARBELL",
-    "BIRD_DOG",
-    "BRIDGE",
-    "BURPEE",
-    "CLAMSHELL-LEFT",
-    "CLAMSHELL-RIGHT",
-    "CRUNCHES",
-    "DEADLIFT-DUMBBELL",
-    "DONKEY_KICK-LEFT",
-    "DONKEY_KICK-RIGHT",
-    "DOWNWARD_DOG",
-    "LUNGE-CROSSBACK",
-    "PRESS-SINGLE_ARM-DUMBBELL-LEFT",
-    "PRESS-SINGLE_ARM-DUMBBELL-RIGHT",
-    "PUSHUP",
-    "PUSHUP-CLOSE_GRIP",
-    "PUSHUP-EXPLOSIVE",
-    "PUSH_PRESS-SINGLE_ARM-DUMBBELL-LEFT",
-    "PUSH_PRESS-SINGLE_ARM-DUMBBELL-RIGHT",
-    "SITUP",
-    "SPLIT_SQUAT-SINGLE_ARM-DUMBBELL-LEFT",
-    "SPLIT_SQUAT-SINGLE_ARM-DUMBBELL-RIGHT",
-    "SQUAT-BACK-BARBELL",
-    "SQUAT-BODYWEIGHT",
-    "SQUAT-GOBLET+SUMO-DUMBBELL",
-    "TRICEP_KICKBACK-BENT_OVER+SINGLE_ARM-DUMBBELL-LEFT",
-    "TRICEP_KICKBACK-BENT_OVER+SINGLE_ARM-DUMBBELL-RIGHT",
-    "UPPERCUT-LEFT",
-    "UPPERCUT-RIGHT",
-    "V_UP",
-]
-WRIST_LOCATION_LST = ["LEFT", "RIGHT"]
-CROWN_ORIENTATION_LST = ["LEFT", "RIGHT"]
-FPS_LST = [20, 30, 40]
+ALL_PARAM_KEYS = []
+EXERCISE_LST = []
+WATCH_LOCATION_LST = []
+CROWN_ORIENTATION_LST = []
+FPS_LST = []
+NAME_TO_OPTIONS = {
+    "exercise": EXERCISE_LST,
+    "watch_location": WATCH_LOCATION_LST,
+    "crown_orientation": CROWN_ORIENTATION_LST,
+    "frames_per_second": FPS_LST,
+}
 
 
-PARAMS_WITH_DESCR = [
-    (
-        "exercise",
-        "Exercise animation",
-        "None",
-        "[" + ", ".join(sorted(EXERCISE_LST)) + "]",
-    ),
-    ("num_reps", "Number of base exercise animation repetitions", "1", "1 to 20"),
-    (
-        "watch_location",
-        "Wrist side where device will be placed",
-        "LEFT",
-        "[LEFT, RIGHT]",
-    ),
-    (
-        "crown_orientation",
-        "Which side the watch crown should point (from first-person perspective)",
-        "RIGHT",
-        "[LEFT, RIGHT]",
-    ),
-    (
-        "ref_xy_rotation",
-        "Rotation (in XY plane) of reference orientation, in radians.",
-        "0.0",
-        "0.0 to 6.2831",
-    ),
-    ("rel_baseline_speed", "Baseline speed of animation, relative to default (natural) speed", "1.0", "0.33 to 3.0"),
-    (
-        "max_rel_speed_change",
-        "Maximum speed change in reps, relative to the baseline speed; expressed as a fraction between 0 and 1",
-        "0.0",
-        "0.0 to 1.0",
-    ),
-    (
-        "trim_start_frac",
-        "Fraction of seed animation (from start to midpoint) to truncate at the start",
-        "0.0",
-        "0.0 to 0.9",
-    ),
-    (
-        "trim_end_frac",
-        "Fraction of seed animation (from start to midpoint) to truncate at the end",
-        "0.0",
-        "0.0 to 0.9",
-    ),
-    (
-        "kinematic_noise_factor",
-        "Scaling factor used to change the default kinematic noise added in generated animations",
-        "1.0",
-        "0.0 to 2.0",
-    ),
-    (
-        "wrist_offset_deg",
-        "Fixed rotation offset applied to supination/pronation axis of wrists, in degrees. Negative values correspond to supination.",
-        "0.0",
-        "-90.0 to 90.0",
-    ),
-    (
-        "randomize_body_shape",
-        "If True, SMPLX body shape will be randomized",
-        "False",
-        "[True, False]",
-    ),
-    (
-        "use_random_motion",
-        "If True, random motion will be used for animation, rather than exercise reps",
-        "False",
-        "[True, False]",
-    ),
-    (
-        "num_random_frames",
-        "Number of random frames to export if using random (non-exercise) motion",
-        "100",
-        "10 to 500",
-    ),
-    (
-        "frames_per_second",
-        "Sampling rate of exported time series and video",
-        "20",
-        "[20, 30, 40]",
-    ),
-    (
-        "image_width",
-        "Width dimension of rendered viewport video, in pixels",
-        "480",
-        "224 to 1024",
-    ),
-    (
-        "image_height",
-        "Height dimension of rendered viewport video, in pixels",
-        "480",
-        "224 to 1024",
-    ),
-    ("random_seed", "Random seed for reproducibility", "None", "0 to 2147483647"),
-]
+def _get_all_params(token: str) -> List[Any]:
+
+    if not ALL_PARAM_KEYS:
+        fetch_parameter_options(token)
+
+    return ALL_PARAM_KEYS
+
+
+def _get_param_options(param: str, token: str) -> List[Any]:
+
+    if not NAME_TO_OPTIONS[param]:
+        fetch_parameter_options(token)
+
+    return NAME_TO_OPTIONS[param]
+
+
+def fetch_parameter_options(token: str, server_url: Optional[str] = None):
+
+    if server_url is None:
+        _server_url = SERVER_URL
+    else:
+        _server_url = server_url
+
+    r = requests.get(
+        f"{_server_url}/api/jobs/{GENERATOR}/",
+        headers={"Authorization": f"Token {token}"},
+    )
+    params = r.json()["params"]
+    params = {e["name"]: e for e in params}
+
+    for name, lst in NAME_TO_OPTIONS.items():
+        if not lst:
+            lst.extend(params[name]["options"]["choices"])
+
+    if not ALL_PARAM_KEYS:
+        ALL_PARAM_KEYS.extend([k for k in params.keys()])
 
 
 def sample_non_rep_params(
+    token: str,
     watch_location: Optional[str] = None,
     crown_orientation: Optional[str] = None,
     ref_xy_rotation: Optional[float] = None,
@@ -162,19 +75,19 @@ def sample_non_rep_params(
 ) -> Dict:
 
     if watch_location is None:
-        watch_location = str(np.random.choice(WRIST_LOCATION_LST))
+        watch_location = str(np.random.choice(_get_param_options("watch_location", token)))
     else:
-        if watch_location not in WRIST_LOCATION_LST:
+        if watch_location not in _get_param_options("watch_location", token):
             raise ValueError(
-                f"`watch_location` ({watch_location}) not in supported wrist location list ({WRIST_LOCATION_LST})"
+                f"`watch_location` ({watch_location}) not in supported wrist location list ({_get_param_options('watch_location', token)})"
             )
 
     if crown_orientation is None:
-        crown_orientation = str(np.random.choice(CROWN_ORIENTATION_LST))
+        crown_orientation = str(np.random.choice(_get_param_options("crown_orientation", token)))
     else:
-        if crown_orientation not in CROWN_ORIENTATION_LST:
+        if crown_orientation not in _get_param_options("crown_orientation", token):
             raise ValueError(
-                f"`crown_orientation` ({crown_orientation}) not in supported crown orientation list ({CROWN_ORIENTATION_LST})"
+                f"`crown_orientation` ({crown_orientation}) not in supported crown orientation list ({_get_param_options('crown_orientation', token)})"
             )
 
     if ref_xy_rotation is None:
@@ -202,11 +115,11 @@ def sample_non_rep_params(
             raise TypeError(f"`randomize_body_shape` ({randomize_body_shape}) must be of type `bool`")
 
     if frames_per_second is None:
-        frames_per_second = int(np.random.choice(FPS_LST))
+        frames_per_second = int(np.random.choice(_get_param_options("frames_per_second", token)))
     else:
-        if frames_per_second not in FPS_LST:
+        if frames_per_second not in _get_param_options("frames_per_second", token):
             raise ValueError(
-                f"`frames_per_second` ({frames_per_second}) not in supported frames per second list ({FPS_LST})"
+                f"`frames_per_second` ({frames_per_second}) not in supported frames per second list ({_get_param_options('frames_per_second', token)})"
             )
 
     if image_width is None and image_height is None:
@@ -250,6 +163,7 @@ def sample_non_rep_params(
 
 
 def sample_rep_params(
+    token: str,
     exercise: Optional[str] = None,
     num_reps: Optional[int] = None,
     watch_location: Optional[str] = None,
@@ -269,10 +183,12 @@ def sample_rep_params(
 ) -> Dict:
 
     if exercise is None:
-        exercise = str(np.random.choice(EXERCISE_LST))
+        exercise = str(np.random.choice(_get_param_options("exercise", token)))
     else:
-        if exercise not in EXERCISE_LST:
-            raise ValueError(f"`exercise` ({exercise}) not in supported exercise list ({EXERCISE_LST})")
+        if exercise not in _get_param_options("exercise", token):
+            raise ValueError(
+                f"`exercise` ({exercise}) not in supported exercise list ({_get_param_options('exercise', token)})"
+            )
 
     if num_reps is None:
         num_reps = int(np.random.randint(1, 11))
@@ -281,19 +197,19 @@ def sample_rep_params(
             raise ValueError(f"`num_reps` ({num_reps}) must in range [1, 20]")
 
     if watch_location is None:
-        watch_location = str(np.random.choice(WRIST_LOCATION_LST))
+        watch_location = str(np.random.choice(_get_param_options("watch_location", token)))
     else:
-        if watch_location not in WRIST_LOCATION_LST:
+        if watch_location not in _get_param_options("watch_location", token):
             raise ValueError(
-                f"`watch_location` ({watch_location}) not in supported wrist location list ({WRIST_LOCATION_LST})"
+                f"`watch_location` ({watch_location}) not in supported wrist location list ({_get_param_options('watch_location', token)})"
             )
 
     if crown_orientation is None:
-        crown_orientation = str(np.random.choice(CROWN_ORIENTATION_LST))
+        crown_orientation = str(np.random.choice(_get_param_options("crown_orientation", token)))
     else:
-        if crown_orientation not in CROWN_ORIENTATION_LST:
+        if crown_orientation not in _get_param_options("crown_orientation", token):
             raise ValueError(
-                f"`crown_orientation` ({crown_orientation}) not in supported crown orientation list ({CROWN_ORIENTATION_LST})"
+                f"`crown_orientation` ({crown_orientation}) not in supported crown orientation list ({_get_param_options('crown_orientation', token)})"
             )
 
     if ref_xy_rotation is None:
@@ -350,11 +266,11 @@ def sample_rep_params(
             raise TypeError(f"`randomize_body_shape` ({randomize_body_shape}) must be of type `bool`")
 
     if frames_per_second is None:
-        frames_per_second = int(np.random.choice(FPS_LST))
+        frames_per_second = int(np.random.choice(_get_param_options("frames_per_second", token)))
     else:
-        if frames_per_second not in FPS_LST:
+        if frames_per_second not in _get_param_options("frames_per_second", token):
             raise ValueError(
-                f"`frames_per_second` ({frames_per_second}) not in supported frames per second list ({FPS_LST})"
+                f"`frames_per_second` ({frames_per_second}) not in supported frames per second list ({_get_param_options('frames_per_second', token)})"
             )
 
     if image_width is None and image_height is None:

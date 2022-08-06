@@ -1,6 +1,6 @@
 import os
 from enum import Enum, auto
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple, Any
 
 import numpy as np
 import requests
@@ -15,121 +15,58 @@ RUN_QUERY_ENDPOINT = "/api/job_runs/"
 PREVIEW_ENDPOINT = "/api/jobs/preview/"
 PREVIEW_QUERY_ENDPOINT = "/api/job_previews/"
 
-SCENE_LST = [
-    "GYM_1",
-    "BEDROOM_2",
-    "BEDROOM_4",
-    "BEDROOM_5",
-]
-EXERCISE_LST = [
-    "LEG_RAISE",  # legacy
-    "SUPERMAN",  # legacy
-    "ARM_RAISE-DUMBBELL",  # legacy
-    "BEAR_CRAWL-HOLDS",
-    "BICEP_CURL-ALTERNATING-DUMBBELL",
-    "BICEP_CURL-BARBELL",
-    "BIRD_DOG",
-    "BRIDGE",
-    "BURPEE",
-    "CLAMSHELL-LEFT",
-    "CLAMSHELL-RIGHT",
-    "CRUNCHES",
-    "DEADLIFT-DUMBBELL",
-    "DONKEY_KICK-LEFT",
-    "DONKEY_KICK-RIGHT",
-    "DOWNWARD_DOG",
-    "LUNGE-CROSSBACK",
-    "PRESS-SINGLE_ARM-DUMBBELL-LEFT",
-    "PRESS-SINGLE_ARM-DUMBBELL-RIGHT",
-    "PUSHUP",
-    "PUSHUP-CLOSE_GRIP",
-    "PUSHUP-EXPLOSIVE",
-    "PUSH_PRESS-SINGLE_ARM-DUMBBELL-LEFT",
-    "PUSH_PRESS-SINGLE_ARM-DUMBBELL-RIGHT",
-    "SITUP",
-    "SPLIT_SQUAT-SINGLE_ARM-DUMBBELL-LEFT",
-    "SPLIT_SQUAT-SINGLE_ARM-DUMBBELL-RIGHT",
-    "SQUAT-BACK-BARBELL",
-    "SQUAT-BODYWEIGHT",
-    "SQUAT-GOBLET+SUMO-DUMBBELL",
-    "TRICEP_KICKBACK-BENT_OVER+SINGLE_ARM-DUMBBELL-LEFT",
-    "TRICEP_KICKBACK-BENT_OVER+SINGLE_ARM-DUMBBELL-RIGHT",
-    "UPPERCUT-LEFT",
-    "UPPERCUT-RIGHT",
-    "V_UP",
-]
-GENDER_LST = ["MALE", "FEMALE"]
-FRAME_RATE_LST = [30, 24, 12, 8, 6]
+ALL_PARAM_KEYS = []
+SCENE_LST = []
+EXERCISE_LST = []
+GENDER_LST = []
+FRAME_RATE_LST = []
+NAME_TO_OPTIONS = {
+    "scene": SCENE_LST,
+    "exercise": EXERCISE_LST,
+    "gender": GENDER_LST,
+    "frame_rate": FRAME_RATE_LST,
+}
+
 IMAGE_DIM_LST = [256, 512]
 NUM_IDENTITIES = 25
-PARAMS_WITH_DESCR = [
-    (
-        "scene",
-        "Background environment/scene",
-        "None",
-        "[GYM_1, BEDROOM_2, BEDROOM_4, BEDROOM_5]",
-    ),
-    (
-        "exercise",
-        "Exercise animation",
-        "None",
-        "[" + ", ".join(sorted(EXERCISE_LST)) + "]",
-    ),
-    ("gender", "Avatar gender", "MALE", "[MALE, FEMALE]"),
-    ("num_reps", "Number of base exercise animation repetitions", "1", "1 to 20"),
-    ("rel_baseline_speed", "Baseline speed of animation, relative to default (natural) speed", "1.0", "0.33 to 3.0"),
-    (
-        "max_rel_speed_change",
-        "Maximum speed change in reps, relative to the baseline speed; expressed as a fraction between 0 and 1",
-        "0.0",
-        "0.0 to 1.0",
-    ),
-    (
-        "trim_start_frac",
-        "Fraction of seed animation (from start to midpoint) to truncate at the start",
-        "0.0",
-        "0.0 to 0.9",
-    ),
-    (
-        "trim_end_frac",
-        "Fraction of seed animation (from start to midpoint) to truncate at the end",
-        "0.0",
-        "0.0 to 0.9",
-    ),
-    (
-        "kinematic_noise_factor",
-        "Scaling factor used to change the default kinematic noise added in generated animations",
-        "1.0",
-        "0.0 to 2.0",
-    ),
-    ("camera_distance", "Approximate distance between camera and avatar, in meters", "3.0", "1.0 to 5.25"),
-    ("camera_height", "Height of viewing camera, in meters", "0.75", "0.1 to 2.75"),
-    ("avatar_identity", "Integer-based unique idenfier that controls the chosen avatar appearance", "0", "0 to 24"),
-    ("relative_height", "Relative height of avatar (positive values = greater height)", "0.0", "-4.0 to 4.0"),
-    ("relative_weight", "Relative weight of avatar (positive values = greater weight)", "0.0", "-4.0 to 4.0"),
-    (
-        "relative_camera_yaw_deg",
-        "Camera yaw in degrees where 0 is directly facing the avatar",
-        "0.0",
-        "-45.0 to 45.0",
-    ),
-    (
-        "relative_camera_pitch_deg",
-        "Camera pitch in degrees where 0 is directly facing the avatar",
-        "0.0",
-        "-45.0 to 45.0",
-    ),
-    ("lighting_power", "Luminosity of the scene", "100.0", "0.0 to 2000.0"),
-    (
-        "relative_avatar_angle_deg",
-        "Avatar rotation in the global XY plane, in degrees, where 0 is directly facing the camera",
-        "0.0",
-        "-180.0 to 180.0",
-    ),
-    ("frame_rate", "Output video frame rate", "24", "[30, 24, 12, 8, 6]"),
-    ("image_width", "Output image/video width in pixels", "256", "128 to 512"),
-    ("image_height", "Output image/video height in pixels", "256", "128 to 512"),
-]
+
+
+def _get_all_params(token: str) -> List[Any]:
+
+    if not ALL_PARAM_KEYS:
+        fetch_parameter_options(token)
+
+    return ALL_PARAM_KEYS
+
+
+def _get_param_options(param: str, token: str) -> List[Any]:
+
+    if not NAME_TO_OPTIONS[param]:
+        fetch_parameter_options(token)
+
+    return NAME_TO_OPTIONS[param]
+
+
+def fetch_parameter_options(token: str, server_url: Optional[str] = None):
+
+    if server_url is None:
+        _server_url = SERVER_URL
+    else:
+        _server_url = server_url
+
+    r = requests.get(
+        f"{_server_url}/api/jobs/{GENERATOR}/",
+        headers={"Authorization": f"Token {token}"},
+    )
+    params = r.json()["params"]
+    params = {e["name"]: e for e in params}
+
+    for name, lst in NAME_TO_OPTIONS.items():
+        if not lst:
+            lst.extend(params[name]["options"]["choices"])
+
+    if not ALL_PARAM_KEYS:
+        ALL_PARAM_KEYS.extend([k for k in params.keys()])
 
 
 class JobType(Enum):
@@ -138,6 +75,7 @@ class JobType(Enum):
 
 
 def sample_input(
+    token: str,
     scene: Optional[str] = None,
     exercise: Optional[str] = None,
     gender: Optional[str] = None,
@@ -161,21 +99,29 @@ def sample_input(
     image_height: Optional[int] = None,
     state: Optional[str] = None,
 ) -> Dict:
+
     if scene is None:
-        scene = str(np.random.choice(SCENE_LST))
+        scene = str(np.random.choice(_get_param_options("scene", token)))
     else:
-        if scene not in SCENE_LST:
-            raise ValueError(f"`scene` ({scene}) not in supported scene list ({SCENE_LST})")
+        if scene not in _get_param_options("scene", token):
+            raise ValueError(f"`scene` ({scene}) not in supported scene list ({_get_param_options('scene', token)})")
+
     if exercise is None:
-        exercise = str(np.random.choice(EXERCISE_LST))
+        exercise = str(np.random.choice(_get_param_options("exercise", token)))
     else:
-        if exercise not in EXERCISE_LST:
-            raise ValueError(f"`exercise` ({exercise}) not in supported exercise list ({EXERCISE_LST})")
+        if exercise not in _get_param_options("exercise", token):
+            raise ValueError(
+                f"`exercise` ({exercise}) not in supported exercise list ({_get_param_options('exercise', token)})"
+            )
+
     if gender is None:
-        gender = str(np.random.choice(GENDER_LST))
+        gender = str(np.random.choice(_get_param_options("gender", token)))
     else:
-        if gender not in GENDER_LST:
-            raise ValueError(f"`gender` ({gender}) not in supported gender list ({GENDER_LST})")
+        if gender not in _get_param_options("gender", token):
+            raise ValueError(
+                f"`gender` ({gender}) not in supported gender list ({_get_param_options('gender', token)})"
+            )
+
     if num_reps is None:
         num_reps = int(np.random.randint(1, 11))
     else:
@@ -252,6 +198,7 @@ def sample_input(
     else:
         if not (-45.0 <= relative_camera_yaw_deg <= 45.0):
             raise ValueError(f"`relative_camera_yaw_deg` ({relative_camera_yaw_deg}) must be in range [-45.0, 45.0]")
+
     if relative_camera_pitch_deg is None:
         relative_camera_pitch_deg = float(np.random.uniform(-10.0, 10.0))
     else:
@@ -259,11 +206,13 @@ def sample_input(
             raise ValueError(
                 f"`relative_camera_pitch_deg` ({relative_camera_pitch_deg}) must be in range [-45.0, 45.0]"
             )
+
     if lighting_power is None:
         lighting_power = float(np.random.uniform(10.0, 1000.0))
     else:
         if not (0.0 <= lighting_power <= 2_000.0):
             raise ValueError(f"`lighting_power` ({lighting_power}) must be in range [0.0, 2000.0]")
+
     if relative_avatar_angle_deg is None:
         relative_avatar_angle_deg = float(np.random.uniform(-180.0, 180.0))
     else:
@@ -271,11 +220,15 @@ def sample_input(
             raise ValueError(
                 f"`relative_avatar_angle_deg` ({relative_avatar_angle_deg}) must be in range [-180.0, 180.0]"
             )
+
     if frame_rate is None:
-        frame_rate = int(np.random.choice(FRAME_RATE_LST))
+        frame_rate = int(np.random.choice(_get_param_options("frame_rate", token)))
     else:
-        if frame_rate not in FRAME_RATE_LST:
-            raise ValueError(f"`frame_rate` ({frame_rate}) not in supported frame rate list ({FRAME_RATE_LST})")
+        if frame_rate not in _get_param_options("frame_rate", token):
+            raise ValueError(
+                f"`frame_rate` ({frame_rate}) not in supported frame rate list ({_get_param_options('frame_rate', token)})"
+            )
+
     if image_width is None and image_height is None:
         square_size = int(np.random.choice(IMAGE_DIM_LST))
         image_width = square_size
@@ -409,9 +362,8 @@ def _expand_overrides_across_each_base(
     if seed_ty not in {JobType.PREVIEW, JobType.VIDEO}:
         raise ValueError(f"`seed_ty` ({seed_ty}) is not supported")
 
-    ALL_PARAM_KEYS = [T[0] for T in PARAMS_WITH_DESCR]
     for override_dict in override_params:
-        if not all([k in ALL_PARAM_KEYS for k in override_dict.keys()]):
+        if not all([k in _get_all_params(token=token) for k in override_dict.keys()]):
             raise ValueError("Not all override parameters are supported")
 
     params_with_overrides = []
@@ -466,9 +418,8 @@ def _submit_rerun_batch_with_overrides(
     if seed_ty not in {JobType.PREVIEW, JobType.VIDEO}:
         raise ValueError(f"`seed_ty` ({seed_ty}) is not supported")
 
-    ALL_PARAM_KEYS = [T[0] for T in PARAMS_WITH_DESCR]
     for override_dict in override_params:
-        if not all([k in ALL_PARAM_KEYS for k in override_dict.keys()]):
+        if not all([k in _get_all_params(token=token) for k in override_dict.keys()]):
             raise ValueError("Not all override parameters are supported")
 
     if seed_ty == JobType.PREVIEW:
