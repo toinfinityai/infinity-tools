@@ -15,7 +15,8 @@ Multiple synthetic data generators are available through the Infinity API. Each 
 Currently, `infinity_tools` supports the following generator APIs:
 
 - [VisionFit](infinity_tools/visionfit/): an exercise/fitness generator targeting computer vision applications.
-- [SenseFit](infinity_tools/sensefit/): an exercise/fitness generator targeting IMU and joint angle time-series applications.
+- [SenseFit](infinity_tools/sensefit/): an exercise/fitness generator targeting IMU and wearable time-series applications.
+- [Spills](infinity_tools/spills/): a computer vision generator that produces photorealistic videos of spills in common retail, industrial, and workplace environments.
 
 The [common](infinity_tools/common/) submodule contains data structures and functionality common across generator-specific support libraries.
 
