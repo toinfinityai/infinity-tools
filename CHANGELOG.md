@@ -6,6 +6,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## [0.6.0] - 2022-09-15
+
+### Added
+- Added support for querying usage statistics:
+  - `infinity_tools.common.api.query_usage_datetime_range`
+  - `infinity_tools.common.api.query_usage_last_n_days`
+
 ## [0.5.0] - 2022-08-16
 
 ### Added
