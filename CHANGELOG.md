@@ -6,6 +6,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## [0.7.0] - 2022-10-11
+
+### Added
+- Added option to overlay category or action label on bounding box videos.
+
+### Changed
+- Miscellaneous updates to `visionfit.vis` to make code more generic / applicable to other generators.
+
+### Fixed
+- Use correct order of height and width with `cv2.VideoWriter` (avoids broken output videos for non-square aspect ratios).
+
 ## [0.6.0] - 2022-09-15
 
 ### Added
