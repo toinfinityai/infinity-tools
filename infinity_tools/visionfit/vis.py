@@ -57,23 +57,28 @@ def visualize_all_labels(video_job_folder: str) -> str:
     rep_count = parse_rep_count_from_json(video_json_path)
     coco = COCO(video_json_path)
 
-    bounding_box_path = create_bounding_boxes_video(os.path.join(output_directory, "bounding_box.mp4"), imgs, fps, coco)
-    skeleton_path = create_keypoint_connections_video(os.path.join(output_directory, "skeleton.mp4"), imgs, fps, coco)
-    cuboids_path = create_cuboids_video(os.path.join(output_directory, "cuboids.mp4"), imgs, fps, coco)
+    bounding_box_path = create_bounding_boxes_video(
+        output_path=os.path.join(output_directory, "bounding_box.mp4"), imgs=imgs, fps=fps, coco=coco
+    )
+    skeleton_path = create_keypoint_connections_video(
+        output_path=os.path.join(output_directory, "skeleton.mp4"), imgs=imgs, fps=fps, coco=coco
+    )
+    cuboids_path = create_cuboids_video(
+        output_path=os.path.join(output_directory, "cuboids.mp4"), imgs=imgs, fps=fps, coco=coco
+    )
     _3D_path = create_3D_keypoints_video(
-        os.path.join(output_directory, "3D_keypoints.mp4"),
-        fps,
-        coco,
-        150,
-        imgs.shape[1],
-        imgs.shape[2],
+        output_path=os.path.join(output_directory, "3D_keypoints.mp4"),
+        fps=fps,
+        coco=coco,
+        width_in_pixels=imgs.shape[2],
+        height_in_pixels=imgs.shape[1],
     )
     segmentation_path = create_segmentation_video(
-        os.path.join(output_directory, "segmentation.mp4"),
-        video_rgb_extracted,
-        fps,
-        imgs.shape[1],
-        imgs.shape[2],
+        output_path=os.path.join(output_directory, "segmentation.mp4"),
+        folder=video_rgb_extracted,
+        fps=fps,
+        image_width=imgs.shape[2],
+        image_height=imgs.shape[1],
     )
 
     clear_output()
@@ -84,9 +89,9 @@ def visualize_all_labels(video_job_folder: str) -> str:
     label_videos_row_2 = stack_videos(row2, axis=2)
     label_grid_path = stack_videos([label_videos_row_1, label_videos_row_2], axis=1)
     ts_path = animate_time_series(
-        os.path.join(output_directory, "timeseries.mp4"),
-        rep_count,
-        fps,
+        output_path=os.path.join(output_directory, "timeseries.mp4"),
+        y_axis=rep_count,
+        fps=fps,
         width_in_pixels=imgs.shape[1] * 2,
         height_in_pixels=imgs.shape[1] * 2,
     )
@@ -159,7 +164,9 @@ def animate_time_series(
     return output_path
 
 
-def create_bounding_boxes_video(output_path: str, imgs: npt.NDArray, fps: int, coco: Any) -> str:
+def create_bounding_boxes_video(
+    output_path: str, imgs: npt.NDArray, fps: int, coco: Any, add_text: bool = False
+) -> str:
     """Overlays bounding box annotations onto video.
 
     Args:
@@ -167,12 +174,13 @@ def create_bounding_boxes_video(output_path: str, imgs: npt.NDArray, fps: int, c
         imgs: Frames of the video.
         fps: Frame rate of input video.
         coco: COCO data.
+        add_text: If True, adds category or action label above each bounding box.
 
     Returns:
         Path to resulting animation video.
     """
     fourcc = cv2.VideoWriter_fourcc(*"mp4v")
-    image_dims = (imgs.shape[1], imgs.shape[2])
+    image_dims = (imgs.shape[2], imgs.shape[1])
     out = cv2.VideoWriter(output_path, fourcc, fps, image_dims)
 
     for img, img_data in zip(imgs, coco.imgs.values()):
@@ -185,6 +193,20 @@ def create_bounding_boxes_video(output_path: str, imgs: npt.NDArray, fps: int, c
                 continue
             x, y, w, h = tuple(np.array(ann["bbox"]).astype(int))
             cv2.rectangle(canvas, (x, y), (x + w, y + h), color=(255, 255, 255), thickness=2)
+            if add_text:
+                category_name = coco.cats[ann["category_id"]]["name"]
+                text = ann.get("action", category_name)
+                cv2.putText(
+                    img=canvas,
+                    text=text,
+                    org=(x, y),
+                    fontFace=cv2.FONT_HERSHEY_SIMPLEX,
+                    fontScale=0.5,
+                    color=(255, 255, 255),
+                    thickness=1,
+                    lineType=cv2.LINE_AA,
+                )
+
         out.write(canvas)
     out.release()
     return output_path
@@ -215,7 +237,7 @@ def create_keypoint_connections_video(output_path: str, imgs: npt.NDArray, fps: 
         Path to resulting animation video.
     """
     kp_connections = get_armature_connections()
-    image_dims = (imgs.shape[1], imgs.shape[2])
+    image_dims = (imgs.shape[2], imgs.shape[1])
     fourcc = cv2.VideoWriter_fourcc(*"mp4v")
     out = cv2.VideoWriter(output_path, fourcc, fps, image_dims)
 
@@ -229,6 +251,8 @@ def create_keypoint_connections_video(output_path: str, imgs: npt.NDArray, fps: 
                 continue
             keypoints = ann["armature_keypoints"]
             for parent, child in kp_connections:
+                if keypoints[parent]["z"] < 0 or keypoints[child]["z"] < 0:
+                    continue
                 x0 = keypoints[parent]["x"]
                 y0 = keypoints[parent]["y"]
                 x1 = keypoints[child]["x"]
@@ -254,7 +278,7 @@ def create_cuboids_video(output_path: str, imgs: npt.NDArray, fps: int, coco: An
         Path to resulting animation video.
     """
     fourcc = cv2.VideoWriter_fourcc(*"mp4v")
-    image_dims = (imgs.shape[1], imgs.shape[2])
+    image_dims = (imgs.shape[2], imgs.shape[1])
     out = cv2.VideoWriter(output_path, fourcc, fps, image_dims)
     cuboid_edges = [
         [0, 1],
@@ -280,6 +304,14 @@ def create_cuboids_video(output_path: str, imgs: npt.NDArray, fps: int, coco: An
             if "cuboid_coordinates" not in ann:
                 continue
             cuboid_points = ann["cuboid_coordinates"]
+
+            if "z" in cuboid_points[0]:
+                all_in_front = all(
+                    [(cuboid_points[e[0]]["z"] > 0 and cuboid_points[e[1]]["z"] > 0) for e in cuboid_edges]
+                )
+                if not all_in_front:
+                    continue
+
             for edge in cuboid_edges:
                 start_point = [cuboid_points[edge[0]]["x"], cuboid_points[edge[0]]["y"]]
                 end_point = [cuboid_points[edge[1]]["x"], cuboid_points[edge[1]]["y"]]
@@ -311,7 +343,7 @@ def create_2D_keypoints_video(output_path: str, imgs: npt.NDArray, fps: int, coc
     """
 
     fourcc = cv2.VideoWriter_fourcc(*"mp4v")
-    image_dims = (imgs.shape[1], imgs.shape[2])
+    image_dims = (imgs.shape[2], imgs.shape[1])
     out = cv2.VideoWriter(output_path, fourcc, fps, image_dims)
 
     for img, img_data in zip(imgs, coco.imgs.values()):
@@ -325,6 +357,8 @@ def create_2D_keypoints_video(output_path: str, imgs: npt.NDArray, fps: int, coc
             keypoints = ann["armature_keypoints"]
             for keypoint_name, keypoint_info in keypoints.items():
                 if keypoint_name == "root":
+                    continue
+                if keypoint_info["z"] < 0:
                     continue
                 x, y = keypoint_info["x"], keypoint_info["y"]
                 cv2.circle(canvas, (x, y), radius=3, color=(255, 255, 255), thickness=-1)
@@ -345,8 +379,11 @@ def create_3D_keypoints_video(
 
     Args:
         output_path: Path to output video
+        fps: desired frame rate of output video
         coco: COCO data
-        job_params: Job parameters from the API
+        dpi: resolution (dots per inch)
+        width_in_pixels: Width of figure, in pixels
+        height_in_pixels: Height of figure, in pixels
 
     Returns:
         Path to resulting animation video.
@@ -374,7 +411,11 @@ def create_3D_keypoints_video(
                         keypoint_info["z_global"],
                     ]
                 )
-    global_coords = np.array(global_coords).reshape(-1, len(keypoints), 3)
+    if all(["person_idx" not in ann for ann in coco.anns.values()]):
+        num_people = 1
+    else:
+        num_people = max([ann["person_idx"] for ann in coco.anns.values() if "person_idx" in ann]) + 1
+    global_coords = np.array(global_coords).reshape(-1, num_people * len(keypoints), 3)
 
     def update(num):
         graph._offsets3d = (
@@ -382,8 +423,6 @@ def create_3D_keypoints_video(
             global_coords[num, :, 1],
             global_coords[num, :, 2],
         )
-        angle = num * 180 / global_coords.shape[0]
-        ax.view_init(30, angle)
 
     graph = ax.scatter(global_coords[0, :, 0], global_coords[0, :, 1], global_coords[0, :, 2])
 
