@@ -23,7 +23,6 @@ NAME_TO_OPTIONS = {
 
 
 def _get_all_params(token: str) -> List[Any]:
-
     if not ALL_PARAM_KEYS:
         fetch_parameter_options(token)
 
@@ -31,7 +30,6 @@ def _get_all_params(token: str) -> List[Any]:
 
 
 def _get_param_options(param: str, token: str) -> List[Any]:
-
     if not NAME_TO_OPTIONS[param]:
         fetch_parameter_options(token)
 
@@ -39,7 +37,6 @@ def _get_param_options(param: str, token: str) -> List[Any]:
 
 
 def fetch_parameter_options(token: str, server_url: Optional[str] = None):
-
     if server_url is None:
         _server_url = SERVER_URL
     else:
@@ -73,7 +70,6 @@ def sample_non_rep_params(
     image_height: Optional[int] = None,
     random_seed: Optional[int] = None,
 ) -> Dict:
-
     if watch_location is None:
         watch_location = str(np.random.choice(_get_param_options("watch_location", token)))
     else:
@@ -181,7 +177,6 @@ def sample_rep_params(
     image_height: Optional[int] = None,
     random_seed: Optional[int] = None,
 ) -> Dict:
-
     if exercise is None:
         exercise = str(np.random.choice(_get_param_options("exercise", token)))
     else:
@@ -325,7 +320,6 @@ def submit_batch_to_api(
     output_dir: str,
     batch_folder_suffix: Optional[str] = None,
 ) -> Tuple[ca.Batch, Optional[str]]:
-
     return ca.submit_batch_to_api(
         generator=GENERATOR,
         server=SERVER_URL,
@@ -349,7 +343,6 @@ def submit_batch_and_visualize(
     output_dir: str,
     batch_folder_suffix: Optional[str] = None,
 ):
-
     batch, batch_folder = submit_batch_to_api(
         job_params=job_params,
         token=token,

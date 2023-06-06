@@ -329,7 +329,6 @@ def query_usage_datetime_range(
     end_time: Optional[datetime] = None,
     server: str = DEFAULT_SERVER,
 ) -> Dict[str, Any]:
-
     if end_time is not None and start_time is not None:
         if end_time < start_time:
             raise ValueError(f"End time ({end_time}) before start time ({start_time}) for usage query")

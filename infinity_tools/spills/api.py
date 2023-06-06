@@ -28,7 +28,6 @@ NAME_TO_OPTIONS = {
 
 
 def _get_all_params(token: str) -> List[Any]:
-
     if not ALL_PARAM_KEYS:
         fetch_parameter_options(token)
 
@@ -36,7 +35,6 @@ def _get_all_params(token: str) -> List[Any]:
 
 
 def _get_param_options(param: str, token: str) -> List[Any]:
-
     if not NAME_TO_OPTIONS[param]:
         fetch_parameter_options(token)
 
@@ -44,7 +42,6 @@ def _get_param_options(param: str, token: str) -> List[Any]:
 
 
 def fetch_parameter_options(token: str, server_url: Optional[str] = None):
-
     if server_url is None:
         _server_url = SERVER_URL
     else:
@@ -82,7 +79,6 @@ def sample_input(
     video_duration: Optional[float] = None,
     random_seed: Optional[int] = None,
 ) -> Dict:
-
     if scene is None:
         scene = str(np.random.choice(_get_param_options("scene", token)))
     else:
@@ -160,7 +156,6 @@ def submit_preview_batch_to_api(
     output_dir: str,
     batch_folder_suffix: Optional[str] = None,
 ) -> Tuple[Batch, Optional[str]]:
-
     return ca.submit_batch_to_api(
         batch_folder_suffix=batch_folder_suffix,
         generator=GENERATOR,
@@ -180,7 +175,6 @@ def submit_video_batch_to_api(
     output_dir: str,
     batch_folder_suffix: Optional[str] = None,
 ) -> Tuple[Batch, Optional[str]]:
-
     return ca.submit_batch_to_api(
         batch_folder_suffix=batch_folder_suffix,
         generator=GENERATOR,
