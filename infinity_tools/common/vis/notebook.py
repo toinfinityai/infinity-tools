@@ -118,7 +118,6 @@ def get_tick_values_and_labels(df: pd.DataFrame, col_name: str, max_xaxis_label_
 def plot_infinity_histogram(
     df: pd.DataFrame, col_name: str, stratify_var: Optional[str] = None
 ) -> plotly.graph_objects.Figure:
-
     """Plots a histogram of the column.
 
     Args:
